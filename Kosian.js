@@ -8,9 +8,11 @@
 	'use strict';
 
 	var instance;
-	var conditions = [];
+	var bearer = null;
 
-	function noimpl () {console.error('not implemented')}
+	function noimpl () {
+		console.error('not implemented');
+	}
 
 	function Kosian (global, options) {
 		if (this instanceof Kosian) {
@@ -38,13 +40,14 @@
 			throw new Error('global object not passed.');
 		}
 
-		conditions.some(function (condition) {
-			var result = condition(global, options);
-			if (result) {
-				instance = result;
-				return true;
+		if (bearer) {
+			try {
+				instance = bearer(global, options);
 			}
-		});
+			catch (e) {
+				instance = null;
+			}
+		}
 
 		if (!instance) {
 			instance = null;
@@ -351,17 +354,19 @@
 		receive: {value: noimpl},
 		openTabWithUrl: {value: noimpl},
 		openTabWithFile: {value: noimpl},
+		isTabExist: {value: noimpl},
 		closeTab: {value: noimpl},
 		focusTab: {value: noimpl},
 		getTabTitle: {value: noimpl},
 		createTransport: {value: noimpl},
 		createFormData: {value: noimpl},
 		createBlob: {value: noimpl},
+		broadcast: {value: noimpl},
 		sendRequest: {value: noimpl}
 	});
 
-	Kosian.register = function (condition) {
-		conditions.unshift(condition);
+	Kosian.register = function (abearer) {
+		bearer = abearer;
 	};
 
 	exports.Kosian = Kosian;

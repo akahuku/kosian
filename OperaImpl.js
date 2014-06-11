@@ -76,6 +76,15 @@
 		this.emit(callback, tab.id, tab.url);
 	}
 
+	function isTabExist (id) {
+		return opera.extension.tabs.getAll().some(function (tab) {
+			if (id instanceof MessagePort && tab.port == id
+			||  typeof id == 'number' && tab.id == id) {
+				return true;
+			}
+		});
+	}
+
 	function closeTab (id) {
 		opera.extension.tabs.getAll().some(function (tab) {
 			if (id instanceof MessagePort && tab.port == id
@@ -168,6 +177,20 @@
 		});
 	}
 
+	function broadcast (message, exceptId) {
+		opera.extension.tabs.getAll().forEach(function (tab) {
+			if (exceptId instanceof MessagePort && tab.port == exceptId
+			||  typeof exceptId == 'number' && tab.exceptId == exceptId) {
+				return;
+			}
+
+			try {
+				tab.port.postMessage(message);
+			}
+			catch (e) {}
+		}, this);
+	}
+
 	function getMessageCatalogPath () {
 		var result;
 		this.resource('locales/locales.json', function (locales) {
@@ -224,20 +247,20 @@
 		receive: {value: receive},
 		openTabWithUrl: {value: openTabWithUrl},
 		openTabWithFile: {value: openTabWithFile},
+		isTabExist: {value: isTabExist},
 		closeTab: {value: closeTab},
 		focusTab: {value: focusTab},
 		getTabTitle: {value: getTabTitle},
 		createTransport: {value: createTransport},
 		createFormData: {value: createFormData},
 		createBlob: {value: createBlob},
-		sendRequest: {value: sendRequest}
+		sendRequest: {value: sendRequest},
+		broadcast: {value: broadcast}
 	});
 	OperaImpl.prototype.constructor = base;
 
 	base.register(function (global, options) {
-		if (global.opera) {
-			return new OperaImpl(global, options);
-		}
+		return new OperaImpl(global, options);
 	});
 })();
 

@@ -16,8 +16,17 @@
 		'kosian/FileSystem.js',
 		'kosian/StorageWrapper.js',
 		'kosian/TabWatcher.js',
+		'kosian/Hotkey.js',
 		'kosian/Kosian.js',
-		'kosian/OperaImpl.js'
+		'kosian/' + (function () {
+			if (global.chrome) {
+				return 'Chrome';
+			}
+			if (global.opera) {
+				return 'Opera';
+			}
+			return 'Null';
+		})() + 'Impl.js'
 	];
 
 	var modules = {};
