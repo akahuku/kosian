@@ -11,6 +11,16 @@
 
 	function receive (callback) {
 		chrome.runtime.onMessage.addListener(function (req, sender, res) {
+			/*
+			console.log('received a message, and sender is:\n' +
+				[
+				' sender.tab.id: ' + sender.tab.id,
+				'sender.tab.url: ' + sender.tab.url,
+				'     sender.id: ' + (sender.id || '?'),
+				'    sender.url: ' + (sender.url || '?'),
+				'       command: ' + req.command
+				].join('\n'));
+			 */
 			callback(req.command, req.data, sender.tab.id, res);
 		});
 	}
