@@ -14,7 +14,7 @@
 			return new FileSystem(ext, fstab);
 		}
 
-		this.ext = ext || require('./kosian/Kosian').Kosian();
+		this.ext = ext || require('kosian/Kosian').Kosian();
 		this.fstab = fstab;
 		this.init();
 	}
@@ -35,7 +35,7 @@
 
 		function initFileSystemCore (data) {
 			var log = [];
-			var FileSystemImpl = require('./kosian/FileSystemImpl').FileSystemImpl;
+			var FileSystemImpl = require('kosian/FileSystemImpl').FileSystemImpl;
 
 			data = this.ext.utils.parseJson(data);
 
@@ -44,7 +44,7 @@
 				if (!('key' in data[i])) continue;
 
 				this.fstab[i].isNull = false;
-				this.fstab[i].instance = FileSystemImpl(i, data[i]);
+				this.fstab[i].instance = FileSystemImpl(i, this.ext, data[i]);
 				log.push(i);
 			}
 
@@ -65,8 +65,8 @@
 			}
 
 			this.ext.resource(this.ext.cryptKeyPath, function (data) {
-				var Blowfish = require('./kosian/Blowfish').Blowfish;
-				var SHA1 = require('./kosian/SHA1').SHA1;
+				var Blowfish = require('kosian/Blowfish').Blowfish;
+				var SHA1 = require('kosian/SHA1').SHA1;
 
 				var data_sha1 = SHA1.calc(data);
 				var bf = new Blowfish(data_sha1);

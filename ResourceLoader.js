@@ -9,7 +9,7 @@
 (function (global) {
 	'use strict';
 
-	var u = require('./kosian/Utils').Utils;
+	var u = require('kosian/Utils').Utils;
 	var self_ = require('sdk/self');
 
 	function ResourceLoader (transportGetter, locationGetter, emitter) {
@@ -57,7 +57,7 @@
 				isText = false;
 			}
 			else {
-				xhr.responseType = 'text';
+				//xhr.responseType = 'text';
 				xhr.overrideMimeType(opts.mimeType || 'text/plain;charset=UTF-8');
 				isText = true;
 			}

@@ -7,7 +7,7 @@
 (function () {
 	'use strict';
 
-	var base = require('./kosian/Kosian').Kosian;
+	var base = require('kosian/Kosian').Kosian;
 
 	function receive (callback) {
 		chrome.runtime.onMessage.addListener(function (req, sender, res) {

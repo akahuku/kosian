@@ -17,6 +17,7 @@
 		'kosian/StorageWrapper.js',
 		'kosian/TabWatcher.js',
 		'kosian/Hotkey.js',
+		'kosian/Clipboard.js',
 		'kosian/Kosian.js',
 		'kosian/' + (function () {
 			if (global.chrome) {

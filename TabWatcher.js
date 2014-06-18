@@ -9,7 +9,7 @@
 (function () {
 	'use strict';
 
-	var u = require('./kosian/Utils').Utils;
+	var u = require('kosian/Utils').Utils;
 
 	/*
 	 * base class

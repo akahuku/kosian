@@ -7,7 +7,7 @@
 (function () {
 	'use strict';
 
-	var base = require('./kosian/Kosian').Kosian;
+	var base = require('kosian/Kosian').Kosian;
 
 	function receive (callback) {
 		opera.extension.onmessage = function (e) {
@@ -70,8 +70,9 @@
 	}
 
 	function openTabWithFile (file, callback) {
+		var url = location.protocol + '//' + location.hostname + '/' + file;
 		var tab = opera.extension.tabs.create({
-			url:location.href.replace(/\/[^\/]*$/, '/') + file, focused:true
+			url:url, focused:true
 		});
 		this.emit(callback, tab.id, tab.url);
 	}

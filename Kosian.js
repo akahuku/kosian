@@ -16,19 +16,6 @@
 
 	function Kosian (global, options) {
 		if (this instanceof Kosian) {
-			this.appName = 'wow!';
-			this.cryptKeyPath = '';
-			this.openBaseURLPattern = null;
-			this.utils = require('./kosian/Utils').Utils;
-			this.storage = require('./kosian/StorageWrapper').StorageWrapper(global);
-			this.tabWatcher = require('./kosian/TabWatcher').TabWatcher(global, this.emit);
-			this.resourceLoader = require('./kosian/ResourceLoader').ResourceLoader(global, {
-				transportGetter: this.createTransport,
-				emitter: this.emit
-			});
-			this.fileSystem = require('./kosian/FileSystem').FileSystem(this, options.fstab);
-
-			this.setOptions(options);
 			return this;
 		}
 
@@ -36,13 +23,27 @@
 			return instance;
 		}
 
-		if (!global) {
-			throw new Error('global object not passed.');
-		}
-
 		if (bearer) {
+			if (!global) {
+				throw new Error('global object not passed.');
+			}
+
 			try {
 				instance = bearer(global, options);
+				instance.appName = 'wow!';
+				instance.cryptKeyPath = '';
+				instance.openBaseURLPattern = null;
+				instance.utils = require('kosian/Utils').Utils;
+				instance.storage = require('kosian/StorageWrapper').StorageWrapper(global);
+				instance.tabWatcher = require('kosian/TabWatcher').TabWatcher(global, instance.emit);
+				instance.resourceLoader = require('kosian/ResourceLoader').ResourceLoader(global, {
+					transportGetter: instance.createTransport,
+					emitter: instance.emit
+				});
+				instance.fileSystem = require('kosian/FileSystem').FileSystem(instance, options.fstab);
+				instance.clipboard = require('kosian/Clipboard').Clipboard(global);
+
+				instance.setOptions(options);
 			}
 			catch (e) {
 				instance = null;
@@ -50,7 +51,6 @@
 		}
 
 		if (!instance) {
-			instance = null;
 			throw new Error('Unknown platform. stop.');
 		}
 
@@ -86,7 +86,7 @@
 		setWriteDelaySecs: {value: function (secs) {
 			secs = Number(secs);
 			if (isNaN(secs) || secs < 0) return;
-			require('./kosian/FileSystemImpl').FileSystemImpl.setWriteDelaySecs(secs);
+			require('kosian/FileSystemImpl').FileSystemImpl.setWriteDelaySecs(secs);
 		}},
 
 		getBaseUrl: {value: function (selfUrl) {
@@ -370,6 +370,10 @@
 	};
 
 	exports.Kosian = Kosian;
+
+	if (require('sdk/self')) {
+		require('kosian/FirefoxImpl');
+	}
 })();
 
 // vim:set ts=4 sw=4 fenc=UTF-8 ff=unix ft=javascript fdm=marker :

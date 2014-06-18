@@ -211,7 +211,7 @@
 	HotkeyFirefox.prototype.constructor = Hotkey;
 
 	function create () {
-		var ext = require('./kosian/Kosian').Kosian();
+		var ext = require('kosian/Kosian').Kosian();
 
 		if (global.chrome) {
 			return new HotkeyChrome(ext.emit);

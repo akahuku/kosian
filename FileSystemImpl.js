@@ -15,7 +15,7 @@
 
 	var authorizeRetryMax = 3;
 	var writeDelaySecsDefault = 10;
-	var u = require('./kosian/Utils').Utils;
+	var u = require('kosian/Utils').Utils;
 	var _ = u._;
 
 	/*
@@ -242,9 +242,10 @@
 	 * file system base class
 	 */
 
-	function FileSystem (options) {
+	function FileSystem (extension, options) {
+		this.extension = extension;
+
 		var self = this;
-		var extension = this.extension = require('./kosian/Kosian').Kosian();
 		var accessToken = '';
 		var refreshToken = '';
 		var tokenType = '';
@@ -615,7 +616,7 @@
 	 * file system class for dropbox
 	 */
 
-	function FileSystemDropbox (options) {
+	function FileSystemDropbox (extension, options) {
 
 		/*
 		 * privates
@@ -840,7 +841,6 @@
 			validateUrl:'https://api.dropbox.com/1/account/info'
 		});
 		var taskQueue = this.taskQueue = new TaskQueue(this, authorize, ls, read, writeBinder.write);
-		var extension = this.extension;
 		var handleError = this.handleError;
 
 		var fileSystemRoot = options.root || 'sandbox';
@@ -864,7 +864,7 @@
 	 * file system class for Google Drive
 	 */
 
-	function FileSystemGDrive (options) {
+	function FileSystemGDrive (extension, options) {
 
 		/*
 		 * privates
@@ -1317,7 +1317,6 @@
 			]
 		});
 		var taskQueue = this.taskQueue = new TaskQueue(this, authorize, ls, read, writeBinder.write);
-		var extension = this.extension;
 		var handleError = this.handleError;
 
 		var fileSystemRoot = options.root || '';
@@ -1340,7 +1339,7 @@
 	 * file system class for Microsoft OneDrive
 	 */
 
-	function FileSystemOneDrive (options) {
+	function FileSystemOneDrive (extension, options) {
 		/*
 		 * privates
 		 */
@@ -1733,7 +1732,6 @@
 			]
 		});
 		var taskQueue = this.taskQueue = new TaskQueue(this, authorize, ls, read, writeBinder.write);
-		var extension = this.extension;
 		var handleError = this.handleError;
 
 		var fileSystemRoot = options.root || '';
@@ -1756,14 +1754,14 @@
 	 * export
 	 */
 
-	function FileSystemImpl (name, options) {
+	function FileSystemImpl (name, ext, options) {
 		switch (name) {
 		case 'dropbox':
-			return new FileSystemDropbox(options);
+			return new FileSystemDropbox(ext, options);
 		case 'gdrive':
-			return new FileSystemGDrive(options);
+			return new FileSystemGDrive(ext, options);
 		case 'onedrive':
-			return new FileSystemOneDrive(options);
+			return new FileSystemOneDrive(ext, options);
 		default:
 			return new FileSystem;
 		}
