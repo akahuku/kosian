@@ -28,6 +28,13 @@
 				xhr = null;
 			}
 
+			function handleLoadFirefox (res) {
+				if (!opts.noCache) {
+					data[resourcePath] = res;
+				}
+				emitter(callback, res);
+			}
+
 			function handleError () {
 				var res = data[resourcePath] = false;
 				emitter(callback, res);
@@ -48,11 +55,20 @@
 				return;
 			}
 
-			var xhr = transportGetter();
 			var sync = 'sync' in opts && opts.sync;
-			var isText;
+			var isText = false;
+			var responseType = opts.responseType || 'text';
+
+			// special shortcut on firefox, if text is requested synchronously
+			if (self_ && responseType == 'text' && sync) {
+				console.log('loading ' + resourcePath);
+				handleLoadFirefox(self_.data.load(resourcePath));
+				return;
+			}
+
+			var xhr = transportGetter();
 			xhr.open('GET', locationGetter(resourcePath), !sync);
-			if (opts.responseType && opts.responseType != 'text') {
+			if (opts.responseType != 'text') {
 				xhr.responseType = opts.responseType;
 				isText = false;
 			}

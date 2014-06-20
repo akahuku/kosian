@@ -46,6 +46,7 @@
 				instance.setOptions(options);
 			}
 			catch (e) {
+				console.error(e.message);
 				instance = null;
 			}
 		}

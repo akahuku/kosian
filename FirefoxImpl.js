@@ -8,6 +8,7 @@
 	'use strict';
 
 	var self = require('sdk/self');
+	var PageMod = require('sdk/page-mod').PageMod;
 	var tabs = require('sdk/tabs');
 	var l10n = require('sdk/l10n/locale');
 	var XMLHttpRequest = require('sdk/net/xhr').XMLHttpRequest;
@@ -163,6 +164,46 @@
 		return 'xlocale/' + result + '/messages.json';
 	}
 
+	function PseudoRegexRule (name, includes, excludes) {
+		this.__kosian_name = name;
+		this.__kosian_includes = includes;
+		this.__kosian_excludes = excludes;
+		this.__kosian_cache = {};
+	}
+
+	PseudoRegexRule.prototype = {
+		constructor: RegExp,
+		__isMatch: function (list, url) {
+			return list ? list.some(function (pat) {
+				return typeof pat == 'function' ?
+					pat(url, this.__local) :
+					(new MatchPattern(pat)).test(url);
+			}, this) : false;
+		},
+		__local: function (url) {
+			return self.data.url(url);
+		},
+		test: function (url) {
+			if (url in this.__kosian_cache) {
+				return this.__kosian_cache[url];
+			}
+
+			// console.log('testing ' + this.__kosian_name + ' for ' + url);
+
+			var included = this.__isMatch(this.__kosian_includes, url);
+			var excluded = this.__isMatch(this.__kosian_excludes, url);
+			var result = included && !excluded;
+
+			return this.__kosian_cache[url] = result;
+		},
+		exec: function (url) {
+			return this.test(url) ? [url] : null;
+		},
+		toString: function () {
+			return '[object PseudoRegexRule_' + this.__kosian_name + ']';
+		}
+	};
+	
 	function FirefoxImpl (global, options) {
 		var that = this;
 		var workers = [];
@@ -179,7 +220,8 @@
 		}
 
 		function handleWorkerDetach () {
-			removeWorker(this);	// 'this' points Worker here
+			// 'this' points Worker here
+			removeWorker(this);
 		}
 
 		function handleWorkerMessage (req) {
@@ -202,44 +244,29 @@
 			});
 		}
 
-		function applyContentScript (tab) {
-			(options.contentScripts || []).forEach(function (spec) {
-				var matched = false;
-				var excluded = false;
-
-				if ('matches' in spec) {
-					matched = spec.matches.some(function (pattern) {
-						return typeof pattern == 'function' ?
-							pattern(tab.url) :
-							(new MatchPattern(pattern)).test(tab.url);
-					});
-				}
-
-				if ('exclude_matches' in spec) {
-					excluded = spec.exclude_matches.some(function (pattern) {
-						return typeof pattern == 'function' ?
-							pattern(tab.url) :
-							(new MatchPattern(pattern)).test(tab.url);
-					});
-				}
-
-				if (matched && !excluded && 'js' in spec) {
-					registerWorker(tab.attach({
-						contentScriptWhen: spec.run_at || 'start',
-						contentScriptFile: spec.js.map(function (file) {
-							return self.data.url(file);
-						}),
-						contentScriptOptions:{extensionId:self.id}
-					}));
-				}
-			});
-		}
-
 		base.apply(this, arguments);
 
+		require('sdk/simple-prefs').on('optionsOpener', function () {
+			tabs.open(self.data.url('options.html'));
+		});
+
 		Object.defineProperty(this, 'workers', {value: workers});
-		Array.prototype.forEach.call(tabs, applyContentScript);
-		tabs.on('ready', applyContentScript);
+		(options.contentScripts || []).forEach(function (spec) {
+			PageMod({
+				include: new PseudoRegexRule(
+					spec.name,
+					spec.matches,
+					spec.exclude_matches
+				),
+				contentScriptWhen: spec.run_at || 'end',
+				contentScriptFile: spec.js.map(function (file) {
+					return self.data.url(file);
+				}),
+				contentScriptOptions:{extensionId:self.id},
+				attachTo: ['existing', 'top', 'frame'],
+				onAttach: registerWorker
+			});
+		});
 	}
 
 	FirefoxImpl.prototype = Object.create(base.prototype, {
