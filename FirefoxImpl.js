@@ -225,10 +225,12 @@
 		}
 
 		function handleWorkerMessage (req) {
+			// 'this' points Worker here
 			if (!that.receiver) return;
 
 			var theWorker = this;
-			that.receiver(req.command, req.data, this.tab.id, function (res) {
+			var tabId = this.tab ? this.tab.id : -1;
+			that.receiver(req.command, req.data, tabId, function (res) {
 				var message = {
 					payload: res || {}
 				};

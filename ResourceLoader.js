@@ -61,7 +61,6 @@
 
 			// special shortcut on firefox, if text is requested synchronously
 			if (self_ && responseType == 'text' && sync) {
-				console.log('loading ' + resourcePath);
 				handleLoadFirefox(self_.data.load(resourcePath));
 				return;
 			}
