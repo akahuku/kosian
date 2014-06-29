@@ -121,7 +121,14 @@
 		}
 	}
 
-	function sendRequest () {
+	function doPostMessage (port, message) {
+		try {
+			port.postMessage(message);
+		}
+		catch (e) {}
+	}
+
+	function sendRequest (/*[id,] message*/) {
 		var id, message;
 
 		switch (arguments.length) {
@@ -138,25 +145,27 @@
 			return;
 		}
 
-		opera.extension.tabs.getAll().some(function (tab) {
-			var found = false;
-			if (id instanceof MessagePort) {
-				found = tab.port == id;
-			}
-			else if (typeof id == 'number') {
-				found = tab.id == id;
-			}
-			else {
-				found = tab.selected;
-			}
-			if (found) {
-				try {
-					tab.postMessage(message);
+		if (id instanceof MessagePort) {
+			doPostMessage(id, message);
+		}
+		else if (typeof id == 'string' && id in this.ports) {
+			doPostMessage(this.ports[id], message);
+		}
+		else {
+			opera.extension.tabs.getAll().some(function (tab) {
+				var found = false;
+				if (typeof id == 'number') {
+					found = tab.id == id;
 				}
-				catch (e) {}
-			}
-			return found;
-		});
+				else {
+					found = tab.selected;
+				}
+				if (found) {
+					doPostMessage(tab.port, message);
+				}
+				return found;
+			});
+		}
 	}
 
 	function broadcast (message, exceptId) {
@@ -166,10 +175,7 @@
 				return;
 			}
 
-			try {
-				tab.port.postMessage(message);
-			}
-			catch (e) {}
+			doPostMessage(tab.port, message);
 		}, this);
 	}
 
@@ -217,11 +223,11 @@
 	function OperaImpl () {
 		var that = this;
 		var notifyTimer;
+		var collectTimer;
+		var ports = {};
 
 		function notifyTabId () {
-			if (notifyTimer) {
-				clearTimeout(notifyTimer);
-			}
+			notifyTimer && clearTimeout(notifyTimer);
 
 			notifyTimer = setTimeout(function () {
 				notifyTimer = 0;
@@ -235,21 +241,51 @@
 					catch (e) {}
 				});
 			}, 1000 * 1);
+
+			if (!collectTimer) {
+				collectTimer = setInterval(collectPorts, 1000 * 60 * 10);
+			}
+		}
+
+		function collectPorts () {
+			var currentLength = Object.keys(ports).length;
+
+			if (currentLength == 0) {
+				collectTimer && clearInterval(collectTimer);
+				collectTimer = null;
+				return;
+			}
+
+			var tmpPorts = {};
+			for (var id in ports) {
+				try {
+					ports[id].postMessage({type: 'ping'});
+					tmpPorts[id] = ports[id];
+				}
+				catch (e) {}
+			}
+
+			ports = tmpPorts;
 		}
 
 		function handleMessage (e) {
 			if (!e.data || !that.receiver) return;
 
 			var tabId = -1;
-			if ('tabId' in e.data) {
+			if (tabId == -1 && 'tabId' in e.data) {
 				tabId = e.data.tabId;
+			}
+			if (tabId == -1 && 'internalId' in e.data) {
+				tabId = e.data.internalId;
 			}
 
 			if (e.ports && e.ports.length) {
+				if (/^init\b/.test(e.data.command)) {
+					ports[e.data.internalId] = e.ports[0];
+					e.ports[0].onmessage = handleMessage;
+				}
 				that.receiver(
-					e.data.command,
-					e.data.data,
-					tabId,
+					e.data.command, e.data.data, tabId,
 					function (data) {
 						try {e.ports[0].postMessage(data)} catch (ex) {}
 					}
@@ -257,9 +293,7 @@
 			}
 			else {
 				that.receiver(
-					e.data.command,
-					e.data.data,
-					tabId,
+					e.data.command, e.data.data, tabId,
 					function () {}
 				);
 			}
@@ -269,6 +303,7 @@
 		widget.preferences['widget-id'] = location.hostname;
 		opera.extension.onconnect = notifyTabId;
 		opera.extension.onmessage = handleMessage;
+		Object.defineProperty(this, 'ports', {value: ports});
 	}
 
 	OperaImpl.prototype = Object.create(base.prototype, {
