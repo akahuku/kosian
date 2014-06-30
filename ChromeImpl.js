@@ -36,7 +36,7 @@
 				'       command: ' + req.command
 				].join('\n'));
 			 */
-			callback(req.command, req.data, sender.tab.id, res);
+			return !!callback(req.command, req.data, sender.tab.id, res);
 		});
 	}
 
@@ -77,6 +77,19 @@
 		});
 	}
 
+	function broadcastToAllTabs (message, exceptId) {
+		chrome.tabs.query({}, function (tabs) {
+			tabs.forEach(function (tab) {
+				if (exceptId !== undefined && tab.id == exceptId) return;
+
+				try {
+					chrome.tabs.sendRequest(tab.id, message);
+				}
+				catch (e) {}
+			});
+		});
+	}
+
 	function createTransport () {
 		return new XMLHttpRequest;
 	}
@@ -101,7 +114,7 @@
 		}
 	}
 
-	function sendRequest () {
+	function postMessage () {
 		var id, message;
 
 		switch (arguments.length) {
@@ -135,35 +148,32 @@
 	}
 
 	function broadcast (message, exceptId) {
-		chrome.tabs.query({}, function (tabs) {
-			tabs.forEach(function (tab) {
-				if (exceptId !== undefined && tab.id == exceptId) return;
-
-				try {
-					chrome.tabs.sendRequest(tab.id, message);
-				}
-				catch (e) {}
-			});
-		});
+		for (var id in this.tabIds) {
+			if (id == exceptId) continue;
+			try {
+				chrome.tabs.sendRequest(id, message);
+			}
+			catch (e) {}
+		}
 	}
 
 	function ChromeImpl () {
-		var that = this;
-		this.tabIds = {};
+		var tabIds = {};
 
 		base.apply(this, arguments);
 
 		chrome.tabs.query({}, function (tabs) {
 			tabs.forEach(function (tab) {
-				that.tabIds[tab.id] = 1;
+				tabIds[tab.id] = 1;
 			});
 		});
 		chrome.tabs.onCreated.addListener(function (tab) {
-			that.tabIds[tab.id] = 1;
+			tabIds[tab.id] = 1;
 		});
 		chrome.tabs.onRemoved.addListener(function (id) {
-			delete that.tabIds[id];
+			delete tabIds[id];
 		});
+		Object.defineProperty(this, 'tabIds', {value: tabIds});
 	}
 
 	ChromeImpl.prototype = Object.create(base.prototype, {
@@ -179,10 +189,11 @@
 		closeTab: {value: closeTab},
 		focusTab: {value: focusTab},
 		getTabTitle: {value: getTabTitle},
+		broadcastToAllTabs: {value: broadcastToAllTabs},
 		createTransport: {value: createTransport},
 		createFormData: {value: createFormData},
 		createBlob: {value: createBlob},
-		sendRequest: {value: sendRequest},
+		postMessage: {value: postMessage},
 		broadcast: {value: broadcast}
 	});
 	ChromeImpl.prototype.constructor = base;

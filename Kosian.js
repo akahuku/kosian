@@ -374,11 +374,12 @@
 		closeTab: {value: noimpl},
 		focusTab: {value: noimpl},
 		getTabTitle: {value: noimpl},
+		broadcastToAllTabs: {value: noimpl},
 		createTransport: {value: noimpl},
 		createFormData: {value: noimpl},
 		createBlob: {value: noimpl},
-		broadcast: {value: noimpl},
-		sendRequest: {value: noimpl}
+		postMessage: {value: noimpl},
+		broadcast: {value: noimpl}
 	});
 
 	Kosian.register = function (abearer) {

@@ -539,7 +539,7 @@
 		response:function (task, data) {
 			data.type = 'fileio-' + task.task + '-response';
 			task.options && this.extension.emit(task.options.onresponse, data);
-			this.extension.sendRequest(task.tabId, data);
+			this.extension.postMessage(task.tabId, data);
 		},
 		responseError:function (task, data) {
 			var errorMessage = false;

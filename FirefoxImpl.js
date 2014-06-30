@@ -87,6 +87,21 @@
 		}, this);
 	}
 
+	function broadcastToAllTabs (message, exceptId) {
+		Array.prototype.forEach.call(tabs, (function (tab) {
+			if (tab.id == exceptId) return;
+			this.workers.some(function (worker) {
+				if (worker.tab.id == tab.id) {
+					try {
+						worker.postMessage({payload: message});
+						return true;
+					}
+					catch (e) {}
+				}
+			});
+		}, this);
+	}
+
 	function createTransport () {
 		return new XMLHttpRequest;
 	}
@@ -111,7 +126,7 @@
 		}
 	}
 
-	function sendRequest () {
+	function postMessage () {
 		var id, message;
 
 		switch (arguments.length) {
@@ -300,10 +315,11 @@
 		closeTab: {value: closeTab},
 		focusTab: {value: focusTab},
 		getTabTitle: {value: getTabTitle},
+		broadcastToAllTabs: {value: broadcastToAllTabs},
 		createTransport: {value: createTransport},
 		createFormData: {value: createFormData},
 		createBlob: {value: createBlob},
-		sendRequest: {value: sendRequest},
+		postMessage: {value: postMessage},
 		broadcast: {value: broadcast}
 	});
 	FirefoxImpl.prototype.constructor = base;

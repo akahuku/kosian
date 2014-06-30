@@ -74,6 +74,7 @@
 	}
 
 	function isTabExist (id) {
+		if (id in this.ports) return true;
 		return opera.extension.tabs.getAll().some(function (tab) {
 			if (id instanceof MessagePort && tab.port == id
 			||  typeof id == 'number' && tab.id == id) {
@@ -112,6 +113,17 @@
 		}, this);
 	}
 
+	function broadcastToAllTabs (message, exceptId) {
+		opera.extension.tabs.getAll().forEach(function (tab) {
+			if (exceptId instanceof MessagePort && tab.port == exceptId
+			||  typeof exceptId == 'number' && tab.exceptId == exceptId) {
+				return;
+			}
+
+			doPostMessage(tab.port, message);
+		}, this);
+	}
+
 	function createTransport () {
 		return new XMLHttpRequest;
 	}
@@ -143,7 +155,7 @@
 		catch (e) {}
 	}
 
-	function sendRequest (/*[id,] message*/) {
+	function postMessage (/*[id,] message*/) {
 		var id, message;
 
 		switch (arguments.length) {
@@ -184,14 +196,10 @@
 	}
 
 	function broadcast (message, exceptId) {
-		opera.extension.tabs.getAll().forEach(function (tab) {
-			if (exceptId instanceof MessagePort && tab.port == exceptId
-			||  typeof exceptId == 'number' && tab.exceptId == exceptId) {
-				return;
-			}
-
-			doPostMessage(tab.port, message);
-		}, this);
+		for (var id in this.ports) {
+			if (id == exceptId) continue;
+			doPostMessage(this.ports[id], message);
+		}
 	}
 
 	function getMessageCatalogPath () {
@@ -335,10 +343,11 @@
 		closeTab: {value: closeTab},
 		focusTab: {value: focusTab},
 		getTabTitle: {value: getTabTitle},
+		broadcastToAllTabs: {value: broadcastToAllTabs},
 		createTransport: {value: createTransport},
 		createFormData: {value: createFormData},
 		createBlob: {value: createBlob},
-		sendRequest: {value: sendRequest},
+		postMessage: {value: postMessage},
 		broadcast: {value: broadcast}
 	});
 	OperaImpl.prototype.constructor = base;
