@@ -136,19 +136,20 @@
 
 		emit: {value: function () {
 			var args = Array.prototype.slice.call(arguments);
-			if (args.length < 1) return;
+			if (args.length < 1) return undefined;
 			var fn = args.shift();
-			if (typeof fn != 'function') return;
+			if (typeof fn != 'function') return undefined;
 			try {
-				fn.apply(null, args);
+				return fn.apply(null, args);
 			}
 			catch (e) {
 				console.error(
-					'background: an error occured inside callback:\n\t' + [
+					this.appName + ': an error occured inside callback:\n\t' + [
 						'message: ' + e.message,
 						'   line: ' + (e.line || e.lineNumber || '?'),
 						'  stack: ' + (e.stack || '?')
 					].join('\n\t'));
+				return undefined;
 			}
 		}},
 

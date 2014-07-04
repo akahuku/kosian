@@ -323,7 +323,7 @@
 				switch (task.state) {
 				case 'error':
 					self.responseError(task, {
-						app_filesystem_error:[task.message] || _('Unknown file system error')
+						app_filesystem_error:[task.message || _('Unknown file system error')]
 					});
 					self.taskQueue.run();
 					break;
@@ -537,8 +537,16 @@
 			options && this.extension.emit(options.onload, {});
 		},
 		response:function (task, data) {
-			data.type = 'fileio-' + task.task + '-response';
-			task.options && this.extension.emit(task.options.onresponse, data);
+			var name = task.options && typeof task.options.externalName == 'string' ?
+				task.options.externalName : task.task;
+
+			data.type = 'fileio-' + name + '-response';
+
+			if (task.options && task.options.onresponse) {
+				var result = this.extension.emit(task.options.onresponse, data);
+				if (result) return;
+			}
+
 			this.extension.postMessage(task.tabId, data);
 		},
 		responseError:function (task, data) {
@@ -783,7 +791,8 @@
 
 					self.response(task, {
 						state:'complete',
-						status:status || 404
+						status:status || 404,
+						meta:{path:task.path}
 					});
 
 					taskQueue.run();
@@ -1112,7 +1121,8 @@
 					) {
 						self.response(task, {
 							state:'complete',
-							status:404
+							status:404,
+							meta:{path:task.path}
 						});
 						taskQueue.run();
 						return;
@@ -1174,7 +1184,8 @@
 
 							self.response(task, {
 								state:'complete',
-								status:status || 404
+								status:status || 404,
+								meta:{path:task.path}
 							});
 							taskQueue.run();
 						}
@@ -1565,7 +1576,8 @@
 					) {
 						self.response(task, {
 							state:'complete',
-							status:404
+							status:404,
+							meta:{path:task.path}
 						});
 						taskQueue.run();
 						return;
@@ -1622,7 +1634,8 @@
 
 							self.response(task, {
 								state:'complete',
-								status:status || 404
+								status:status || 404,
+								meta:{path:task.path}
 							});
 							taskQueue.run();
 						}

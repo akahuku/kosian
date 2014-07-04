@@ -80,8 +80,8 @@
 
 			var xhr = transportGetter();
 			xhr.open('GET', locationGetter(resourcePath), !sync);
-			if (opts.responseType != 'text') {
-				xhr.responseType = opts.responseType;
+			if (responseType != 'text') {
+				xhr.responseType = responseType;
 				isText = false;
 			}
 			else {
