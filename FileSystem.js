@@ -142,7 +142,7 @@
 			else {
 				fs.instance.clearCredentials();
 			}
-		});
+		}, this);
 	};
 
 	FileSystem.prototype.ls = function (path) {

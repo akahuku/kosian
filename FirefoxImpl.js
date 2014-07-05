@@ -35,20 +35,22 @@
 	}
 
 	function openTabWithUrl (url, selfUrl, callback) {
+		var that = this;
 		tabs.open({
 			url: url,
 			onReady: function (tab) {
-				callback && emit(callback, tab.id, tab.url);
+				callback && that.emit(callback, tab.id, tab.url);
 				callback = null;
 			}
 		});
 	}
 
 	function openTabWithFile (file, callback) {
+		var that = this;
 		tabs.open({
 			url: self.data.url(file),
 			onReady: function (tab) {
-				callback && emit(callback, tab.id, tab.url);
+				callback && that.emit(callback, tab.id, tab.url);
 				callback = null;
 			}
 		});
@@ -70,6 +72,7 @@
 	}
 
 	function focusTab (id) {
+		var that = this;
 		Array.prototype.some.call(tabs, function (tab) {
 			if (tab.id == id) {
 				tab.activate();
@@ -79,18 +82,20 @@
 	}
 
 	function getTabTitle (id, callback) {
+		var that = this;
 		Array.prototype.some.call(tabs, function (tab) {
 			if (tab.id == id) {
-				this.emit(callback, tab.title);
+				that.emit(callback, tab.title);
 				return true;
 			}
-		}, this);
+		});
 	}
 
 	function broadcastToAllTabs (message, exceptId) {
-		Array.prototype.forEach.call(tabs, (function (tab) {
+		var that = this;
+		Array.prototype.forEach.call(tabs, function (tab) {
 			if (tab.id == exceptId) return;
-			this.workers.some(function (worker) {
+			that.workers.some(function (worker) {
 				if (worker.tab.id == tab.id) {
 					try {
 						worker.postMessage({payload: message});
@@ -99,7 +104,7 @@
 					catch (e) {}
 				}
 			});
-		}, this);
+		});
 	}
 
 	function createTransport () {
