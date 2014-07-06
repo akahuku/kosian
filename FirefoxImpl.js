@@ -78,25 +78,25 @@
 	}
 
 	function isTabExist (id) {
-		return !!findTabById(id);
+		return !!this.findTabById(id);
 	}
 
 	function closeTab (id) {
-		var tab = findTabById(id);
+		var tab = this.findTabById(id);
 		if (tab) {
 			tab.close();
 		}
 	}
 
 	function focusTab (id) {
-		var tab = findTabById(id);
+		var tab = this.findTabById(id);
 		if (tab) {
 			tab.activate();
 		}
 	}
 
 	function getTabTitle (id, callback) {
-		var tab = findTabById(id);
+		var tab = this.findTabById(id);
 		this.emit(callback, tab ? tab.title : null);
 	}
 
@@ -336,7 +336,11 @@
 			tabs.open(self.data.url('options.html'));
 		});
 
-		Object.defineProperty(this, 'workers', {value: workers});
+		Object.defineProperties(this, {
+			workers: {value: workers},
+			findTabById: {value: findTabById}
+		});
+
 		(options.contentScripts || []).forEach(function (spec) {
 			PageMod({
 				include: new PseudoRegexRule(
