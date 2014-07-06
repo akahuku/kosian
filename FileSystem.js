@@ -88,7 +88,11 @@
 				initFileSystemCore.call(this, decrypted);
 
 			}, {noCache:true, bind:this});
-		}, {noCache:true, bind:this});
+		}, {
+			noCache:true,
+			mimeType:'text/plain;charset=x-user-defined',
+			bind:this
+		});
 	};
 
 	FileSystem.prototype.getInstance = function (path) {
@@ -107,7 +111,7 @@
 
 		for (var i in this.fstab) {
 			var fs = this.fstab[i];
-			if (!fs.instance) {
+			if (!fs || !fs.instance) {
 				continue;
 			}
 			if (fs.isDefault) {
@@ -124,8 +128,12 @@
 		var result = [];
 		for (var i in this.fstab) {
 			var fs = this.fstab[i];
-			if (fs.isNull) continue;
-			result.push({name:i, isDefault:fs.isDefault});
+			if (!fs || fs.isNull) continue;
+			result.push({
+				name:i,
+				enabled:fs.enabled,
+				isDefault:fs.isDefault
+			});
 		}
 		return result;
 	};

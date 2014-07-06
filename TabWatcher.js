@@ -28,11 +28,13 @@
 	 * base class
 	 */
 
-	function TabWatcher (emit) {
-		this.add = function (id, url, callback) {
+	function TabWatcher (emit) {}
+
+	TabWatcher.prototype = {
+		add: function (id, url, callback) {
 			emit(callback, null);
-		};
-	}
+		}
+	};
 
 	/*
 	 * for chrome
@@ -140,12 +142,12 @@
 	 */
 
 	function FirefoxJetpackTabWatcher (emit) {
+		var tabs = require('sdk/tabs');
 		var targets = [];
 		var timer;
 
 		function startTimer () {
 			if (timer) return;
-
 			timer = u.setInterval(function () {
 				var newTargets = [];
 
@@ -179,10 +181,13 @@
 		}
 
 		this.add = function (id, url, callback) {
-			// in this context, id is Tab object instance.
-			targets.push({tab:id, startUrl:id.url, goalUrl:url, callback:callback});
-			startTimer();
-			return true;
+			Array.prototype.some.call(tabs, function (tab) {
+				if (tab.id == id) {
+					targets.push({tab:tab, startUrl:tab.url, goalUrl:url, callback:callback});
+					startTimer();
+					return true;
+				}
+			});
 		};
 	}
 

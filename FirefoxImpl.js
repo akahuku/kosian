@@ -26,9 +26,30 @@
 	var PageMod = require('sdk/page-mod').PageMod;
 	var tabs = require('sdk/tabs');
 	var l10n = require('sdk/l10n/locale');
-	var XMLHttpRequest = require('sdk/net/xhr').XMLHttpRequest;
 	var MatchPattern = require('sdk/util/match-pattern').MatchPattern;
 	var base = require('kosian/Kosian').Kosian;
+
+	function findTabById (id) {
+		var result;
+
+		Array.prototype.some.call(tabs, function (tab) {
+			if (tab.id == id) {
+				result = tab;
+				return true;
+			}
+		});
+		if (result) return result;
+
+		for (var i in this.workers) {
+			if (i == id) {
+				result = this.workers[i].tab;
+				break;
+			}
+		}
+		if (result) return result;
+
+		return null;
+	}
 
 	function receive (callback) {
 		this.receiver = callback;
@@ -57,78 +78,88 @@
 	}
 
 	function isTabExist (id) {
-		return Array.prototype.some.call(tabs, function (tab) {
-			return tab.id == id;
-		});
+		return !!findTabById(id);
 	}
 
 	function closeTab (id) {
-		Array.prototype.some.call(tabs, function (tab) {
-			if (tab.id == id) {
-				tab.close();
-				return true;
-			}
-		});
+		var tab = findTabById(id);
+		if (tab) {
+			tab.close();
+		}
 	}
 
 	function focusTab (id) {
-		var that = this;
-		Array.prototype.some.call(tabs, function (tab) {
-			if (tab.id == id) {
-				tab.activate();
-				return true;
-			}
-		});
+		var tab = findTabById(id);
+		if (tab) {
+			tab.activate();
+		}
 	}
 
 	function getTabTitle (id, callback) {
-		var that = this;
-		Array.prototype.some.call(tabs, function (tab) {
-			if (tab.id == id) {
-				that.emit(callback, tab.title);
-				return true;
-			}
-		});
+		var tab = findTabById(id);
+		this.emit(callback, tab ? tab.title : null);
 	}
 
 	function broadcastToAllTabs (message, exceptId) {
 		var that = this;
 		Array.prototype.forEach.call(tabs, function (tab) {
 			if (tab.id == exceptId) return;
-			that.workers.some(function (worker) {
-				if (worker.tab.id == tab.id) {
-					try {
-						worker.postMessage({payload: message});
-						return true;
-					}
-					catch (e) {}
+
+			for (var i in that.workers) {
+				var worker = that.workers[i];
+				if (worker.tab.id != tab.id) continue;
+				if (worker.tab.url != tab.url) continue;
+
+				try {
+					worker.postMessage({payload: message});
+					break;
 				}
-			});
+				catch (e) {}
+			}
 		});
 	}
 
 	function createTransport () {
-		return new XMLHttpRequest;
+		var chrome = require('chrome');
+		if (chrome) {
+			var Cc = chrome.Cc, Ci = chrome.Ci;
+			var xhr = Cc['@mozilla.org/xmlextras/xmlhttprequest;1']
+				.createInstance(Ci.nsIXMLHttpRequest);
+			xhr.mozBackgroundRequest = true;
+			return xhr;
+		}
+		return null;
 	}
 
 	function createFormData () {
-		switch (arguments.length) {
-		case 0:
-			return new FormData;
-		default:
-			return new FormData(arguments[0]);
+		var chrome = require('chrome');
+		if (!chrome) {
+			return null;
 		}
+
+		/*
+		 * @see https://bugzilla.mozilla.org/show_bug.cgi?id=672690#c4
+		 */
+		var Cc = chrome.Cc, Ci = chrome.Ci;
+		var formData = Cc["@mozilla.org/files/formdata;1"]
+			.createInstance(Ci.nsIDOMFormData);
+		if (!formData) {
+			return null;
+		}
+
+		if (arguments.length) {
+			// TODO: When the argument is specified, it must be Form Element
+			// and will be necessary to add all the form items of form
+			// manually.
+			throw new Error('kosian: Creating FormData with argument is not implemented yet on Firefox');
+		}
+
+		return formData;
 	}
 
 	function createBlob () {
-		switch (arguments.length) {
-		case 0:
-			return new Blob;
-		case 1:
-			return new Blob(arguments[0]);
-		default:
-			return new Blob(arguments[0], arguments[1]);
-		}
+		// TODO
+		throw new Error('kosian: Creating Blob is not implemented yet on Firefox');
 	}
 
 	function postMessage () {
@@ -148,27 +179,31 @@
 			return;
 		}
 
-		this.workers.some(function (worker) {
+		for (var i in this.workers) {
+			var worker = this.workers[i];
 			if (id === undefined && worker.tab == tabs.activeTab
-			||  id !== undefined && worker.tab.id == id) {
+			||  id !== undefined && (worker.tab.id == id || i == id)) {
 				try {
 					worker.postMessage({payload: message});
 				}
 				catch (e) {}
-				return true;
+				break;
 			}
-		});
+		}
 	}
 
 	function broadcast (message, exceptId) {
-		this.workers.forEach(function (worker) {
-			if (exceptId !== undefined && worker.tab.id == exceptId) return;
+		for (var i in this.workers) {
+			var worker = this.workers[i];
+			if (exceptId !== undefined) {
+				if (worker.tab.id == exceptId || i == exceptId) continue;
+			}
 
 			try {
 				worker.postMessage({payload: message});
 			}
 			catch (e) {}
-		});
+		}
 	}
 
 	function getMessageCatalogPath () {
@@ -241,17 +276,20 @@
 	
 	function FirefoxImpl (global, options) {
 		var that = this;
-		var workers = [];
+		var workers = {};
 
 		function removeWorker (worker) {
-			var index = workers.indexOf(worker);
-			index >= 0 && workers.splice(index, 1);
+			for (var i in workers) {
+				if (workers[i] == worker) {
+					delete workers[i];
+					break;
+				}
+			}
 		}
 
 		function registerWorker (worker) {
 			worker.on('detach', handleWorkerDetach);
 			worker.on('message', handleWorkerMessage);
-			workers.push(worker);
 		}
 
 		function handleWorkerDetach () {
@@ -264,7 +302,18 @@
 			if (!that.receiver) return;
 
 			var theWorker = this;
-			var tabId = this.tab ? this.tab.id : -1;
+			var tabId = -1;
+			if (tabId == -1 && 'internalId' in req) {
+				tabId = req.internalId;
+			}
+			if (tabId == -1 && this.tab) {
+				tabId = this.tab.id;
+			}
+
+			if (/^init\b/.test(req.command)) {
+				workers[req.internalId] = this;
+			}
+
 			that.receiver(req.command, req.data, tabId, function (res) {
 				var message = {
 					payload: res || {}

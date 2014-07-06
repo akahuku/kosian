@@ -144,7 +144,7 @@
 			}
 			catch (e) {
 				console.error(
-					this.appName + ': an error occured inside callback:\n\t' + [
+					'kosian: an error occured inside callback:\n\t' + [
 						'message: ' + e.message,
 						'   line: ' + (e.line || e.lineNumber || '?'),
 						'  stack: ' + (e.stack || '?')
@@ -268,7 +268,6 @@
 					var st, re
 					try {st = xhr.status} catch (e) {st = 'Unknown status'}
 					try {re = xhr.responseText} catch (e) {re = 'Unknown response'}
-					console.log('request error: ' + st + ': ' + re);
 				}
 
 				try {
