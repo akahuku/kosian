@@ -547,7 +547,9 @@
 				if (result) return;
 			}
 
+			//var logMode = this.extension.setLogMode(true);
 			this.extension.postMessage(task.tabId, data);
+			//this.extension.setLogMode(logMode);
 		},
 		responseError:function (task, data) {
 			var errorMessage = false;

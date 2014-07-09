@@ -40,13 +40,9 @@
 		});
 		if (result) return result;
 
-		for (var i in this.workers) {
-			if (i == id) {
-				result = this.workers[i].tab;
-				break;
-			}
+		if (id in this.workers) {
+			return this.workers[id].tab;
 		}
-		if (result) return result;
 
 		return null;
 	}
@@ -299,10 +295,14 @@
 
 		function handleWorkerMessage (req) {
 			// 'this' points Worker here
-			if (!that.receiver) return;
+			if (!req || !that.receiver) return;
 
 			var theWorker = this;
+			var data = req.data;
 			var tabId = -1;
+
+			delete req.data;
+
 			if (tabId == -1 && 'internalId' in req) {
 				tabId = req.internalId;
 			}
@@ -310,17 +310,17 @@
 				tabId = this.tab.id;
 			}
 
-			if (/^init\b/.test(req.command)) {
+			if (/^init\b/.test(req.type)) {
 				workers[req.internalId] = this;
 			}
 
-			that.receiver(req.command, req.data, tabId, function (res) {
+			that.receiver(req, data, tabId, function (res) {
 				var message = {
 					payload: res || {}
 				};
 
-				if ('messageId' in req) {
-					message.messageId = req.messageId;
+				if ('callbackNumber' in req) {
+					message.callbackNumber = req.callbackNumber;
 				}
 
 				try {

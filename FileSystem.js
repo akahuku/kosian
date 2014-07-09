@@ -61,9 +61,6 @@
 				log.push(i);
 			}
 
-			this.ext.isDev && console.info(
-				this.ext.appName + ': following filesystems are available: ' + log.join(', '));
-
 			this.fstab.nullFs = {
 				enabled:true,
 				isNull:true,

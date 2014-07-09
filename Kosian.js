@@ -46,6 +46,7 @@
 			try {
 				instance = bearer(global, options);
 				instance.appName = 'wow!';
+				instance.logMode = false;
 				instance.cryptKeyPath = '';
 				instance.openBaseURLPattern = null;
 				instance.utils = require('kosian/Utils').Utils;
@@ -85,18 +86,30 @@
 		}},
 
 		setAppName: {value: function (arg) {
+			var result = this.appName;
 			arg = arg + '';
 			this.appName = arg;
+			return result;
+		}},
+
+		setLogMode: {value: function (arg) {
+			var result = this.logMode;
+			this.logMode = !!arg;
+			return result;
 		}},
 
 		setCryptKeyPath: {value: function (arg) {
+			var result = this.cryptKeyPath;
 			arg = arg + '';
 			this.cryptKeyPath = arg;
+			return result;
 		}},
 
 		setOpenBaseUrlPattern: {value: function (pattern) {
+			var result = this.openBaseURLPattern;
 			if (!(pattern instanceof RegExp)) return;
 			this.openBaseURLPattern = pattern;
+			return result;
 		}},
 
 		setWriteDelaySecs: {value: function (secs) {
@@ -118,6 +131,9 @@
 
 			if ('appName' in options) {
 				this.setAppName(options.appName);
+			}
+			if ('lodMode' in options) {
+				this.setLogMode(options.logMode);
 			}
 			if ('openBaseUrlPattern' in options) {
 				this.setOpenBaseUrlPattern(options.openBaseUrlPattern);
@@ -365,6 +381,10 @@
 				this.isDev && console.error(e.toString());
 				xhr && xhr.onerror && xhr.onerror();
 			}
+		}},
+
+		log: {value: function () {
+			this.logMode && console.log(Array.prototype.slice.call(arguments).join(' '));
 		}},
 
 		receive: {value: noimpl},

@@ -36,7 +36,9 @@
 				'       command: ' + req.command
 				].join('\n'));
 			 */
-			return !!callback(req.command, req.data, sender.tab.id, res);
+			var data = req.data;
+			delete req.data;
+			return !!callback(req, data, sender.tab.id, res);
 		});
 	}
 

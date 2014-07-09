@@ -151,8 +151,11 @@
 	function doPostMessage (port, message) {
 		try {
 			port.postMessage(message);
+			return true;
 		}
-		catch (e) {}
+		catch (e) {
+			return false;
+		}
 	}
 
 	function postMessage (/*[id,] message*/) {
@@ -173,10 +176,12 @@
 		}
 
 		if (id instanceof MessagePort) {
+			this.log('posting message via MessagePort', id);
 			doPostMessage(id, message);
 		}
 		else if (typeof id == 'string' && id in this.ports) {
-			doPostMessage(this.ports[id], message);
+			this.log('posting message to id', id, '(', this.ports[id].url, ')');
+			doPostMessage(this.ports[id].port, message);
 		}
 		else {
 			opera.extension.tabs.getAll().some(function (tab) {
@@ -188,6 +193,7 @@
 					found = tab.selected;
 				}
 				if (found) {
+					this.log('posting message to url', tab.url);
 					doPostMessage(tab.port, message);
 				}
 				return found;
@@ -198,7 +204,8 @@
 	function broadcast (message, exceptId) {
 		for (var id in this.ports) {
 			if (id == exceptId) continue;
-			doPostMessage(this.ports[id], message);
+			this.log('broadcasting message to id', id, ', ', this.ports[id].url);
+			doPostMessage(this.ports[id].port, message);
 		}
 	}
 
@@ -281,42 +288,50 @@
 
 			var tmpPorts = {};
 			for (var id in ports) {
-				try {
-					ports[id].postMessage({type: 'ping'});
+				if (doPostMessage(ports[id].port, {type: 'ping'})) {
 					tmpPorts[id] = ports[id];
 				}
-				catch (e) {}
 			}
 
 			ports = tmpPorts;
 		}
 
 		function handleMessage (e) {
-			if (!e.data || !that.receiver) return;
+			if (!e || !e.data || !that.receiver) return;
 
+			var req = e.data;
+			var data = req.data;
 			var tabId = -1;
-			if (tabId == -1 && 'tabId' in e.data) {
-				tabId = e.data.tabId;
+
+			delete req.data;
+			that.log('got a message:', JSON.stringify(req, null, ' '));
+
+			if (tabId == -1 && 'tabId' in req) {
+				tabId = req.tabId;
 			}
-			if (tabId == -1 && 'internalId' in e.data) {
-				tabId = e.data.internalId;
+			if (tabId == -1 && 'internalId' in req) {
+				tabId = req.internalId;
 			}
 
 			if (e.ports && e.ports.length) {
-				if (/^init\b/.test(e.data.command)) {
-					ports[e.data.internalId] = e.ports[0];
+				if (/^init\b/.test(req.type) && 'internalId' in req) {
+					ports[req.internalId] = {
+						port: e.ports[0],
+						url: data.url
+					};
 					e.ports[0].onmessage = handleMessage;
+					that.log('port stored with id', req.internalId);
 				}
 				that.receiver(
-					e.data.command, e.data.data, tabId,
+					req, data, tabId,
 					function (data) {
-						try {e.ports[0].postMessage(data)} catch (ex) {}
+						doPostMessage(e.ports[0], data);
 					}
 				);
 			}
 			else {
 				that.receiver(
-					e.data.command, e.data.data, tabId,
+					req, data, tabId,
 					function () {}
 				);
 			}
