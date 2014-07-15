@@ -211,7 +211,6 @@
 
 			this.hotkeyObjects = [];
 			this.parseHotkeys(hotkeys).forEach(function (hotkey) {
-				console.log('registering hotkey: "' + hotkey + '"');
 				this.hotkeyObjects.push(this.hotkeyFactory({
 					combo:hotkey,
 					onPress:this.handlePressBinded

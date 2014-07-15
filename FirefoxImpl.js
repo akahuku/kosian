@@ -273,6 +273,7 @@
 	function FirefoxImpl (global, options) {
 		var that = this;
 		var workers = {};
+		var contentScriptOptions = options.contentScriptOptions || {};
 
 		function removeWorker (worker) {
 			for (var i in workers) {
@@ -341,6 +342,7 @@
 			findTabById: {value: findTabById}
 		});
 
+		contentScriptOptions.extensionId = self.id;
 		(options.contentScripts || []).forEach(function (spec) {
 			PageMod({
 				include: new PseudoRegexRule(
@@ -352,7 +354,7 @@
 				contentScriptFile: spec.js.map(function (file) {
 					return self.data.url(file);
 				}),
-				contentScriptOptions:{extensionId:self.id},
+				contentScriptOptions: contentScriptOptions,
 				attachTo: ['existing', 'top', 'frame'],
 				onAttach: registerWorker
 			});
