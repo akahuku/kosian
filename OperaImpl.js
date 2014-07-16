@@ -197,7 +197,7 @@
 					doPostMessage(tab.port, message);
 				}
 				return found;
-			});
+			}, this);
 		}
 	}
 
