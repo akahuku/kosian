@@ -22,6 +22,13 @@
 (function () {
 	'use strict';
 
+	const {Cc, Ci, Cu} = require('chrome');
+
+	/*
+	 * @see http://stackoverflow.com/questions/19780396/use-blob-on-firefox-add-on
+	 */
+	const {Blob, File} = Cu.import("resource://gre/modules/Services.jsm", {});
+
 	var self = require('sdk/self');
 	var PageMod = require('sdk/page-mod').PageMod;
 	var tabs = require('sdk/tabs');
@@ -116,46 +123,37 @@
 	}
 
 	function createTransport () {
-		var chrome = require('chrome');
-		if (chrome) {
-			var Cc = chrome.Cc, Ci = chrome.Ci;
-			var xhr = Cc['@mozilla.org/xmlextras/xmlhttprequest;1']
-				.createInstance(Ci.nsIXMLHttpRequest);
-			xhr.mozBackgroundRequest = true;
-			return xhr;
-		}
-		return null;
+		var xhr = Cc['@mozilla.org/xmlextras/xmlhttprequest;1']
+			.createInstance(Ci.nsIXMLHttpRequest);
+		xhr.mozBackgroundRequest = true;
+		return xhr;
 	}
 
 	function createFormData () {
-		var chrome = require('chrome');
-		if (!chrome) {
-			return null;
-		}
-
 		/*
 		 * @see https://bugzilla.mozilla.org/show_bug.cgi?id=672690#c4
 		 */
-		var Cc = chrome.Cc, Ci = chrome.Ci;
-		var formData = Cc["@mozilla.org/files/formdata;1"]
-			.createInstance(Ci.nsIDOMFormData);
-		if (!formData) {
-			return null;
-		}
+		var formDataClass = Cc["@mozilla.org/files/formdata;1"];
 
-		if (arguments.length) {
-			// TODO: When the argument is specified, it must be Form Element
-			// and will be necessary to add all the form items of form
-			// manually.
-			throw new Error('kosian: Creating FormData with argument is not implemented yet on Firefox');
+		switch (arguments.length) {
+		case 0:
+			return formDataClass.createInstance(
+				Ci.nsIDOMFormData);
+		default:
+			return formDataClass.createInstance(
+				Ci.nsIDOMFormData, arguments[0]);
 		}
-
-		return formData;
 	}
 
 	function createBlob () {
-		// TODO
-		throw new Error('kosian: Creating Blob is not implemented yet on Firefox');
+		switch (arguments.length) {
+		case 0:
+			return new Blob;
+		case 1:
+			return new Blob(arguments[0]);
+		default:
+			return new Blob(arguments[0], arguments[1]);
+		}
 	}
 
 	function postMessage () {

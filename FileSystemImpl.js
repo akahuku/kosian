@@ -198,60 +198,6 @@
 	}
 
 	/*
-	 * multipart/related handling class
-	 */
-
-	function GDriveFileContent (metadata, content) {
-		var result;
-		var boundary;
-
-		function getMetadataPart (metadata) {
-			var m = {};
-			for (var i in metadata) {
-				if (metadata[i] != undefined) {
-					m[i] = metadata[i];
-				}
-			}
-			return JSON.stringify(m);
-		}
-
-		function getBoundary () {
-			return '----------' +
-				Math.floor(Math.random() * 0x80000000).toString(36) + '-' +
-				Math.floor(Math.random() * 0x80000000).toString(36) + '-' +
-				Math.floor(Math.random() * 0x80000000).toString(36);
-		}
-
-		function main () {
-			boundary = getBoundary();
-
-			var data = [];
-			data.push(
-				'--' + boundary + '\r\n' +
-				'Content-Type: application/json;charset=UTF-8\r\n' +
-				'\r\n',
-				getMetadataPart(metadata),
-				'\r\n');
-			data.push(
-				'--' + boundary + '\r\n' +
-				'Content-Type: ' + (metadata.mimeType || 'text/plain;charset=UTF-8') + '\r\n' +
-				'\r\n',
-				content,
-				'\r\n');
-			data.push(
-				'--' + boundary + '--\r\n');
-
-			result = new Blob(data);
-			metadata = content = null;
-		}
-
-		main();
-
-		this.__defineGetter__('result', function () {return result});
-		this.__defineGetter__('boundary', function () {return boundary});
-	}
-
-	/*
 	 * file system base class
 	 */
 
@@ -1067,6 +1013,60 @@
 				created:    new Date(item.createdDate),
 				mime_type:  item.mimeType
 			};
+		}
+
+		/*
+		 * multipart/related handling class
+		 */
+
+		function GDriveFileContent (metadata, content) {
+			var result;
+			var boundary;
+
+			function getMetadataPart (metadata) {
+				var m = {};
+				for (var i in metadata) {
+					if (metadata[i] != undefined) {
+						m[i] = metadata[i];
+					}
+				}
+				return JSON.stringify(m);
+			}
+
+			function getBoundary () {
+				return '----------' +
+					Math.floor(Math.random() * 0x80000000).toString(36) + '-' +
+					Math.floor(Math.random() * 0x80000000).toString(36) + '-' +
+					Math.floor(Math.random() * 0x80000000).toString(36);
+			}
+
+			function main () {
+				boundary = getBoundary();
+
+				var data = [];
+				data.push(
+					'--' + boundary + '\r\n' +
+					'Content-Type: application/json;charset=UTF-8\r\n' +
+					'\r\n',
+					getMetadataPart(metadata),
+					'\r\n');
+				data.push(
+					'--' + boundary + '\r\n' +
+					'Content-Type: ' + (metadata.mimeType || 'text/plain;charset=UTF-8') + '\r\n' +
+					'\r\n',
+					content,
+					'\r\n');
+				data.push(
+					'--' + boundary + '--\r\n');
+
+				result = extension.createBlob(data);
+				metadata = content = null;
+			}
+
+			main();
+
+			this.__defineGetter__('result', function () {return result});
+			this.__defineGetter__('boundary', function () {return boundary});
 		}
 
 		/*
