@@ -22,24 +22,12 @@
 (function () {
 	'use strict';
 
+	var COLLECT_TIMER_INTERVAL = 1000 * 60 * 3;
+
 	var base = require('kosian/Kosian').Kosian;
 
 	function receive (callback) {
-		chrome.runtime.onMessage.addListener(function (req, sender, res) {
-			/*
-			console.log('received a message, and sender is:\n' +
-				[
-				' sender.tab.id: ' + sender.tab.id,
-				'sender.tab.url: ' + sender.tab.url,
-				'     sender.id: ' + (sender.id || '?'),
-				'    sender.url: ' + (sender.url || '?'),
-				'       command: ' + req.command
-				].join('\n'));
-			 */
-			var data = req.data;
-			delete req.data;
-			return !!callback(req, data, sender.tab.id, res);
-		});
+		this.receiver = callback;
 	}
 
 	function openTabWithUrl (url, selfUrl, callback) {
@@ -61,21 +49,21 @@
 	}
 
 	function closeTab (id) {
-		chrome.tabs.get(id, function () {
-			chrome.tabs.remove(id);
+		chrome.tabs.get(id, function (tab) {
+			tab && chrome.tabs.remove(id);
 		});
 	}
 
 	function focusTab (id) {
-		chrome.tabs.get(id, function () {
-			chrome.tabs.update(id, {active:true});
+		chrome.tabs.get(id, function (tab) {
+			tab && chrome.tabs.update(id, {active:true});
 		});
 	}
 
 	function getTabTitle (id, callback) {
 		var that = this;
 		chrome.tabs.get(id, function (tab) {
-			that.emit(callback, tab.title);
+			that.emit(callback, tab ? tab.title : null);
 		});
 	}
 
@@ -150,32 +138,95 @@
 	}
 
 	function broadcast (message, exceptId) {
-		for (var id in this.tabIds) {
+		for (var id in this.ports) {
 			if (id == exceptId) continue;
 			try {
-				chrome.tabs.sendRequest(id, message);
+				this.ports[id].port.postMessage(message);
 			}
 			catch (e) {}
 		}
 	}
 
+	function dumpInternalIds () {
+		var log = ['*** Internal Ids ***'];
+		for (var id in this.ports) {
+			log.push('id #' + id + ': ' + this.ports[id].url);
+		}
+		return log;
+	}
+
 	function ChromeImpl () {
+		var that = this;
 		var tabIds = {};
+		var ports = {};
+
+		// tab handlers
+		function handleTabCreated (tab) {
+			tabIds[tab.id] = 1;
+		}
+
+		function handleTabRemoved (id) {
+			delete tabIds[id];
+		}
+
+		// handlers of a message via long-lived port
+		function handleConnect (port) {
+			that.log('handleConnect: connected with ', port.name);
+			ports[port.name] = {port: port};
+			port.onMessage.addListener(handlePortMessage);
+			port.onDisconnect.addListener(handleDisconnect);
+		}
+
+		function handleDisconnect (port) {
+			that.log('handleDisconnect: removed the port ', port.name);
+			delete ports[port.name];
+		}
+
+		function handlePortMessage (req, port) {
+			if (!that.receiver) return;
+
+			var data = req.data;
+			delete req.data;
+
+			if (/^init\b/.test(req.type)) {
+				ports[port.name].url = data.url;
+				that.log(
+					'handlePortMessage: stored the port ', port.name,
+					'\n', dumpInternalIds.call(that).join('\n'));
+			}
+
+			that.receiver(req, data, port.name, function () {});
+		}
+
+		// single message handlers
+		function handleMessage (req, sender, res) {
+			that.log('handleMessage: ' + JSON.stringify(req));
+			if (!that.receiver) return;
+
+			var data = req.data;
+			delete req.data;
+
+			if (/^init\b/.test(req.type)
+			&& 'internalId' in req
+			&& req.internalId in ports) {
+				ports[req.internalId].url = data.url;
+				that.log(
+					'handleMessage: stored the port ', req.internalId,
+					'\n', dumpInternalIds.call(that).join('\n'));
+			}
+
+			return !!that.receiver(req, data, sender.tab.id, res);
+		}
 
 		base.apply(this, arguments);
-
-		chrome.tabs.query({}, function (tabs) {
-			tabs.forEach(function (tab) {
-				tabIds[tab.id] = 1;
-			});
+		chrome.tabs.onCreated.addListener(handleTabCreated);
+		chrome.tabs.onRemoved.addListener(handleTabRemoved);
+		chrome.runtime.onConnect.addListener(handleConnect);
+		chrome.runtime.onMessage.addListener(handleMessage);
+		Object.defineProperties(this, {
+			ports: {value: ports},
+			tabIds: {value: tabIds}
 		});
-		chrome.tabs.onCreated.addListener(function (tab) {
-			tabIds[tab.id] = 1;
-		});
-		chrome.tabs.onRemoved.addListener(function (id) {
-			delete tabIds[id];
-		});
-		Object.defineProperty(this, 'tabIds', {value: tabIds});
 	}
 
 	ChromeImpl.prototype = Object.create(base.prototype, {
@@ -196,7 +247,8 @@
 		createFormData: {value: createFormData},
 		createBlob: {value: createBlob},
 		postMessage: {value: postMessage},
-		broadcast: {value: broadcast}
+		broadcast: {value: broadcast},
+		dumpInternalIds: {value: dumpInternalIds}
 	});
 	ChromeImpl.prototype.constructor = base;
 

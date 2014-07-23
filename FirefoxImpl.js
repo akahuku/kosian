@@ -200,6 +200,14 @@
 		}
 	}
 
+	function dumpInternalIds () {
+		var log = ['*** Internal Ids ***'];
+		for (var id in this.workers) {
+			log.push('id #' + id + ': ' + this.workers[id].tab.url);
+		}
+		return log;
+	}
+
 	function getMessageCatalogPath () {
 		var prefered = l10n.getPreferedLocales();
 		if (!prefered) {
@@ -309,7 +317,7 @@
 				tabId = this.tab.id;
 			}
 
-			if (/^init\b/.test(req.type)) {
+			if (/^init\b/.test(req.type) && 'internalId' in req) {
 				workers[req.internalId] = this;
 			}
 
@@ -378,7 +386,8 @@
 		createFormData: {value: createFormData},
 		createBlob: {value: createBlob},
 		postMessage: {value: postMessage},
-		broadcast: {value: broadcast}
+		broadcast: {value: broadcast},
+		dumpInternalIds: {value: dumpInternalIds}
 	});
 	FirefoxImpl.prototype.constructor = base;
 

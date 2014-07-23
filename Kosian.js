@@ -399,7 +399,8 @@
 		createFormData: {value: noimpl},
 		createBlob: {value: noimpl},
 		postMessage: {value: noimpl},
-		broadcast: {value: noimpl}
+		broadcast: {value: noimpl},
+		dumpInternalIds: {value: noimpl}
 	});
 
 	Kosian.register = function (abearer) {

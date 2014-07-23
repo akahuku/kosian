@@ -22,6 +22,9 @@
 (function () {
 	'use strict';
 
+	var NOTIFY_TIMER_INTERVAL = 1000 * 1;
+	var COLLECT_TIMER_INTERVAL = 1000 * 60 * 3;
+
 	var base = require('kosian/Kosian').Kosian;
 
 	function receive (callback) {
@@ -209,6 +212,14 @@
 		}
 	}
 
+	function dumpInternalIds () {
+		var log = ['*** Internal Ids ***'];
+		for (var id in this.ports) {
+			log.push('id #' + id + ': ' + this.ports[id].url);
+		}
+		return log;
+	}
+
 	function getMessageCatalogPath () {
 		var result;
 		this.resource('locales/locales.json', function (locales) {
@@ -260,7 +271,7 @@
 			notifyTimer && clearTimeout(notifyTimer);
 
 			notifyTimer = setTimeout(function () {
-				notifyTimer = 0;
+				notifyTimer = null;
 				opera.extension.tabs.getAll().forEach(function (tab) {
 					try {
 						tab.postMessage({
@@ -270,30 +281,27 @@
 					}
 					catch (e) {}
 				});
-			}, 1000 * 1);
+			}, NOTIFY_TIMER_INTERVAL);
 
 			if (!collectTimer) {
-				collectTimer = setInterval(collectPorts, 1000 * 60 * 10);
+				collectTimer = setInterval(collectPorts, COLLECT_TIMER_INTERVAL);
 			}
 		}
 
 		function collectPorts () {
-			var currentLength = Object.keys(ports).length;
+			var ids = Object.keys(ports);
 
-			if (currentLength == 0) {
+			if (ids.length == 0) {
 				collectTimer && clearInterval(collectTimer);
 				collectTimer = null;
 				return;
 			}
 
-			var tmpPorts = {};
-			for (var id in ports) {
-				if (doPostMessage(ports[id].port, {type: 'ping'})) {
-					tmpPorts[id] = ports[id];
+			ids.forEach(function (id) {
+				if (!doPostMessage(ports[id].port, {type: 'ping'})) {
+					delete ports[id];
 				}
-			}
-
-			ports = tmpPorts;
+			});
 		}
 
 		function handleMessage (e) {
@@ -304,7 +312,6 @@
 			var tabId = -1;
 
 			delete req.data;
-			that.log('got a message:', JSON.stringify(req, null, ' '));
 
 			if (tabId == -1 && 'tabId' in req) {
 				tabId = req.tabId;
@@ -320,13 +327,10 @@
 						url: data.url
 					};
 					e.ports[0].onmessage = handleMessage;
-					that.log('port stored with id', req.internalId);
 				}
 				that.receiver(
 					req, data, tabId,
-					function (data) {
-						doPostMessage(e.ports[0], data);
-					}
+					function (data) {doPostMessage(e.ports[0], data)}
 				);
 			}
 			else {
@@ -341,6 +345,7 @@
 		widget.preferences['widget-id'] = location.hostname;
 		opera.extension.onconnect = notifyTabId;
 		opera.extension.onmessage = handleMessage;
+		collectTimer = setInterval(collectPorts, COLLECT_TIMER_INTERVAL);
 		Object.defineProperty(this, 'ports', {value: ports});
 	}
 
@@ -363,7 +368,8 @@
 		createFormData: {value: createFormData},
 		createBlob: {value: createBlob},
 		postMessage: {value: postMessage},
-		broadcast: {value: broadcast}
+		broadcast: {value: broadcast},
+		dumpInternalIds: {value: dumpInternalIds}
 	});
 	OperaImpl.prototype.constructor = base;
 
