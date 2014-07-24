@@ -22,8 +22,6 @@
 (function () {
 	'use strict';
 
-	var COLLECT_TIMER_INTERVAL = 1000 * 60 * 3;
-
 	var base = require('kosian/Kosian').Kosian;
 
 	function receive (callback) {
@@ -45,7 +43,7 @@
 	}
 
 	function isTabExist (id) {
-		return id in this.tabIds;
+		return id in this.tabIds || id in this.ports;
 	}
 
 	function closeTab (id) {
@@ -72,10 +70,7 @@
 			tabs.forEach(function (tab) {
 				if (exceptId !== undefined && tab.id == exceptId) return;
 
-				try {
-					chrome.tabs.sendRequest(tab.id, message);
-				}
-				catch (e) {}
+				doSendRequest(tab.id, message);
 			});
 		});
 	}
@@ -104,7 +99,27 @@
 		}
 	}
 
-	function postMessage () {
+	function doSendRequest (tabId, message) {
+		try {
+			chrome.tabs.sendRequest(tabId, message);
+			return true;
+		}
+		catch (e) {
+			return false;
+		}
+	}
+
+	function doPostMessage (port, message) {
+		try {
+			port.postMessage(message);
+			return true;
+		}
+		catch (e) {
+			return false;
+		}
+	}
+
+	function postMessage (/*[id,] message*/) {
 		var id, message;
 
 		switch (arguments.length) {
@@ -121,29 +136,24 @@
 			return;
 		}
 
-		if (id === undefined) {
+		if (typeof id == 'string' && id in this.ports) {
+			doPostMessage(this.ports[id].port, message);
+		}
+		else if (id === undefined) {
 			chrome.tabs.query({active: true}, function (tabs) {
-				try {
-					chrome.tabs.sendRequest(tabs[0].id, message);
-				}
-				catch (e) {}
+				doSendRequest(tabs[0].id, message);
 			});
 		}
 		else {
-			try {
-				chrome.tabs.sendRequest(id, message);
-			}
-			catch (e) {}
+			doSendRequest(id, message);
 		}
 	}
 
 	function broadcast (message, exceptId) {
 		for (var id in this.ports) {
 			if (id == exceptId) continue;
-			try {
-				this.ports[id].port.postMessage(message);
-			}
-			catch (e) {}
+
+			doPostMessage(this.ports[id].port, message);
 		}
 	}
 
@@ -171,14 +181,12 @@
 
 		// handlers of a message via long-lived port
 		function handleConnect (port) {
-			that.log('handleConnect: connected with ', port.name);
 			ports[port.name] = {port: port};
 			port.onMessage.addListener(handlePortMessage);
 			port.onDisconnect.addListener(handleDisconnect);
 		}
 
 		function handleDisconnect (port) {
-			that.log('handleDisconnect: removed the port ', port.name);
 			delete ports[port.name];
 		}
 
@@ -188,11 +196,8 @@
 			var data = req.data;
 			delete req.data;
 
-			if (/^init\b/.test(req.type)) {
+			if (/^init\b/.test(req.type) && port.name in ports) {
 				ports[port.name].url = data.url;
-				that.log(
-					'handlePortMessage: stored the port ', port.name,
-					'\n', dumpInternalIds.call(that).join('\n'));
 			}
 
 			that.receiver(req, data, port.name, function () {});
@@ -200,7 +205,6 @@
 
 		// single message handlers
 		function handleMessage (req, sender, res) {
-			that.log('handleMessage: ' + JSON.stringify(req));
 			if (!that.receiver) return;
 
 			var data = req.data;
@@ -210,9 +214,6 @@
 			&& 'internalId' in req
 			&& req.internalId in ports) {
 				ports[req.internalId].url = data.url;
-				that.log(
-					'handleMessage: stored the port ', req.internalId,
-					'\n', dumpInternalIds.call(that).join('\n'));
 			}
 
 			return !!that.receiver(req, data, sender.tab.id, res);

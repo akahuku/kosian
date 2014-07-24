@@ -113,11 +113,7 @@
 				if (worker.tab.id != tab.id) continue;
 				if (worker.tab.url != tab.url) continue;
 
-				try {
-					worker.postMessage({payload: message});
-					break;
-				}
-				catch (e) {}
+				doPostMessage(worker, {payload: message});
 			}
 		});
 	}
@@ -156,7 +152,17 @@
 		}
 	}
 
-	function postMessage () {
+	function doPostMessage (worker, message) {
+		try {
+			worker.postMessage(message);
+			return true;
+		}
+		catch (e) {
+			return false;
+		}
+	}
+
+	function postMessage (/*[id,] message*/) {
 		var id, message;
 
 		switch (arguments.length) {
@@ -177,10 +183,7 @@
 			var worker = this.workers[i];
 			if (id === undefined && worker.tab == tabs.activeTab
 			||  id !== undefined && (worker.tab.id == id || i == id)) {
-				try {
-					worker.postMessage({payload: message});
-				}
-				catch (e) {}
+				doPostMessage(worker, {payload: message});
 				break;
 			}
 		}
@@ -193,10 +196,7 @@
 				if (worker.tab.id == exceptId || i == exceptId) continue;
 			}
 
-			try {
-				worker.postMessage({payload: message});
-			}
-			catch (e) {}
+			doPostMessage(worker, {payload: message});
 		}
 	}
 
@@ -330,10 +330,7 @@
 					message.callbackNumber = req.callbackNumber;
 				}
 
-				try {
-					theWorker.postMessage(message);
-				}
-				catch (e) {}
+				doPostMessage(theWorker, message);
 			});
 		}
 

@@ -113,7 +113,7 @@
 				this.emit(callback, tab.title);
 				return true;
 			}
-		}, this);
+		}, this) || this.emit(callback, null);
 	}
 
 	function broadcastToAllTabs (message, exceptId) {
@@ -179,11 +179,9 @@
 		}
 
 		if (id instanceof MessagePort) {
-			this.log('posting message via MessagePort', id);
 			doPostMessage(id, message);
 		}
 		else if (typeof id == 'string' && id in this.ports) {
-			this.log('posting message to id', id, '(', this.ports[id].url, ')');
 			doPostMessage(this.ports[id].port, message);
 		}
 		else {
@@ -196,7 +194,6 @@
 					found = tab.selected;
 				}
 				if (found) {
-					this.log('posting message to url', tab.url);
 					doPostMessage(tab.port, message);
 				}
 				return found;
@@ -207,7 +204,7 @@
 	function broadcast (message, exceptId) {
 		for (var id in this.ports) {
 			if (id == exceptId) continue;
-			this.log('broadcasting message to id', id, ', ', this.ports[id].url);
+
 			doPostMessage(this.ports[id].port, message);
 		}
 	}
