@@ -384,7 +384,25 @@
 		}},
 
 		log: {value: function () {
-			this.logMode && console.log(Array.prototype.slice.call(arguments).join(' '));
+			var method = 'log';
+			var force = false;
+			var args = Array.prototype.slice.call(arguments).join(' ');
+
+			if (/^!/.test(args)) {
+				force = true;
+				args = args.substring(1);
+			}
+
+			if (/^INFO:/.test(args)) {
+				method = 'info';
+			}
+			else if (/^ERROR:/.test(args)) {
+				method = 'error';
+			}
+
+			if (this.logMode || force) {
+				console[method](this.appName + ' backend: ' + args);
+			}
 		}},
 
 		receive: {value: noimpl},

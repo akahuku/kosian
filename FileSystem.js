@@ -47,7 +47,6 @@
 		 */
 
 		function initFileSystemCore (data) {
-			var log = [];
 			var FileSystemImpl = require('kosian/FileSystemImpl').FileSystemImpl;
 
 			data = this.ext.utils.parseJson(data);
@@ -58,7 +57,6 @@
 
 				this.fstab[i].isNull = false;
 				this.fstab[i].instance = FileSystemImpl(i, this.ext, data[i]);
-				log.push(i);
 			}
 
 			this.fstab.nullFs = {
@@ -134,6 +132,35 @@
 		}
 		return result;
 	};
+
+	FileSystem.prototype.setInfo = function (info) {
+		var defaultFilesystem = null;
+
+		for (var i in this.fstab) {
+			if (this.fstab[i].isDefault) {
+				defaultFilesystem = i;
+				delete this.fstab[i].isDefault;
+			}
+		}
+
+		for (var i in this.fstab) {
+			if (!(i in info)) continue;
+			if (!this.fstab[i] || this.fstab[i].isNull) continue;
+
+			if ('isDefault' in info[i]) {
+				this.fstab[i].isDefault = !!info[i].isDefault;
+				defaultFilesystem = null;
+			}
+
+			if ('enabled' in info[i]) {
+				this.fstab[i].enabled = !!info[i].enabled;
+			}
+		}
+
+		if (defaultFilesystem != null) {
+			this.fstab[defaultFilesystem].isDefault = true;
+		}
+	}
 
 	FileSystem.prototype.clearCredentials = function (target) {
 		Object.keys(fstab).forEach(function (name) {

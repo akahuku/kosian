@@ -308,6 +308,8 @@
 			var data = req.data;
 			var tabId = -1;
 
+			that.logMode && that.log('got a message:', JSON.stringify(req).substring(0, 200));
+
 			delete req.data;
 
 			if (tabId == -1 && 'tabId' in req) {

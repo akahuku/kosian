@@ -34,10 +34,14 @@
 		clear: {value: function () {}},
 		toExternal: {value: function (value) {
 			if (typeof value == 'string') {
-				if (value.charAt(0) == '{' && value.substr(-1) == '}'
-				||  value.charAt(0) == '[' && value.substr(-1) == ']') {
-					try {value = JSON.parse(value)} catch (e) {}
+				var tmp;
+				try {
+					tmp = JSON.parse(value);
 				}
+				catch (e) {
+					tmp = value;
+				}
+				value = tmp;
 			}
 			else if (value === null) {
 				value = undefined;
@@ -45,16 +49,7 @@
 			return value;
 		}},
 		toInternal: {value: function (value) {
-			switch (/^\[object\s+(.+)\]$/.exec(Object.prototype.toString.call(value))[1]) {
-			case 'Object':
-				/*FALLTHRU*/
-			case 'Array':
-				value = JSON.stringify(value);
-				break;
-			case 'Function':
-				return;
-			}
-			return value;
+			return JSON.stringify(value);
 		}}
 	});
 
