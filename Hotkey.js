@@ -161,9 +161,34 @@
 				result = this.parseHotkeys('');
 			}
 
+			var hash = {};
+			result.forEach(function (sc) {
+				hash[JSON.stringify(sc)] = sc;
+			});
+			result = Object.keys(hash).map(function (key) {
+				return hash[key];
+			});
+
 			return result;
 		},
 		handlePress:function () {
+		},
+		validateKeyCode:function (arg) {
+			if (typeof arg == 'number') {
+				arg = {keyCode: arg};
+			}
+
+			for (var i in keyTable) {
+				if (keyTable[i] == arg.keyCode) {
+					var codes = [];
+					arg.shiftKey && codes.push('s');
+					arg.ctrlKey && codes.push('c');
+					codes.push(i);
+					return '<' + codes.join('-') + '>';
+				}
+			}
+
+			return null;
 		}
 	};
 
