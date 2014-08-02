@@ -58,6 +58,7 @@
 				});
 				instance.fileSystem = require('kosian/FileSystem').FileSystem(instance, options.fstab);
 				instance.clipboard = require('kosian/Clipboard').Clipboard(global);
+				instance.sound = require('kosian/Sound').Sound();
 
 				instance.setOptions(options);
 			}

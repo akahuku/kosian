@@ -33,6 +33,7 @@
 		'kosian/TabWatcher.js',
 		'kosian/Hotkey.js',
 		'kosian/Clipboard.js',
+		'kosian/Sound.js',
 		'kosian/Kosian.js',
 		'kosian/' + (function () {
 			if (global.chrome) {
