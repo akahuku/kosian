@@ -37,7 +37,8 @@
 
 	function openTabWithFile (file, callback) {
 		var that = this;
-		chrome.tabs.create({url:chrome.runtime.getURL(file)}, function (tab) {
+		var url = chrome.runtime.getURL(file);
+		chrome.tabs.create({url:url}, function (tab) {
 			that.emit(callback, tab.id, url);
 		});
 	}
