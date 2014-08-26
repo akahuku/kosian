@@ -130,6 +130,9 @@
 		set defaultHotkeysDesc (v) {
 			this.defaultHotkeysDesc_ = v;
 		},
+		get keyTable () {
+			return keyTable;
+		},
 		parseHotkeys:function (hotkeys) {
 			var result = [];
 
@@ -322,8 +325,9 @@
 		for (i = '0'.charCodeAt(0), goal = '9'.charCodeAt(0); i <= goal; i++) {
 			keyTable[String.fromCharCode(i)] = i;
 		}
-		for (i = 'a'.charCodeAt(0), goal = 'z'.charCodeAt(0); i <= goal; i++) {
+		for (i = 'A'.charCodeAt(0), goal = 'Z'.charCodeAt(0); i <= goal; i++) {
 			keyTable[String.fromCharCode(i)] = i;
+			keyTable[String.fromCharCode(i + 32)] = i;
 		}
 		for (i = 112, j = 1, goal = i + 12; i < goal; i++, j++) {
 			keyTable['f' + j] = i;
