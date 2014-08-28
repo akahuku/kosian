@@ -412,6 +412,8 @@
 		isTabExist: {value: noimpl},
 		closeTab: {value: noimpl},
 		focusTab: {value: noimpl},
+		nextTab: {value: noimpl},
+		prevTab: {value: noimpl},
 		getTabTitle: {value: noimpl},
 		broadcastToAllTabs: {value: noimpl},
 		createTransport: {value: noimpl},

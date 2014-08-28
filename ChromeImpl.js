@@ -59,6 +59,28 @@
 		});
 	}
 
+	function nextTab (id) {
+		chrome.tabs.query({}, function (tabs) {
+			tabs.some(function (t, i) {
+				if (t.id == id) {
+					chrome.tabs.update(tabs[(i + 1) % tabs.length].id, {active: true});
+					return true;
+				}
+			});
+		});
+	}
+
+	function prevTab (id) {
+		chrome.tabs.query({}, function (tabs) {
+			tabs.some(function (t, i) {
+				if (t.id == id) {
+					chrome.tabs.update(tabs[(i + tabs.length - 1) % tabs.length].id, {active: true});
+					return true;
+				}
+			});
+		});
+	}
+
 	function getTabTitle (id, callback) {
 		var that = this;
 		chrome.tabs.get(id, function (tab) {
@@ -243,6 +265,8 @@
 		isTabExist: {value: isTabExist},
 		closeTab: {value: closeTab},
 		focusTab: {value: focusTab},
+		nextTab: {value: nextTab},
+		prevTab: {value: prevTab},
 		getTabTitle: {value: getTabTitle},
 		broadcastToAllTabs: {value: broadcastToAllTabs},
 		createTransport: {value: createTransport},
