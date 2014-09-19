@@ -305,20 +305,22 @@
 		}}
 	});
 
-	function create () {
+	function create (useDefault) {
 		var ext = require('kosian/Kosian').Kosian();
 
-		if (global.chrome) {
-			return new HotkeyChrome(ext.emit);
-		}
-		else if (global.opera) {
-			return new HotkeyOpera(ext.emit);
-		}
-		else if (require('sdk/self')) {
-			return new HotkeyFirefox(ext.emit);
+		if (!useDefault) {
+			if (global.chrome) {
+				return new HotkeyChrome(ext.emit);
+			}
+			else if (global.opera) {
+				return new HotkeyOpera(ext.emit);
+			}
+			else if (require('sdk/self')) {
+				return new HotkeyFirefox(ext.emit);
+			}
 		}
 
-		return new Hotkey;
+		return new Hotkey(ext.emit);
 	}
 
 	(function init () {
