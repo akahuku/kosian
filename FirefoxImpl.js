@@ -260,11 +260,11 @@
 				return this.__kosian_cache[url];
 			}
 
-			// console.log('testing ' + this.__kosian_name + ' for ' + url);
-
 			var included = this.__isMatch(this.__kosian_includes, url);
 			var excluded = this.__isMatch(this.__kosian_excludes, url);
 			var result = included && !excluded;
+
+			//console.log('testing ' + this.__kosian_name + ' for ' + url + ': included: ' + included + ', excluded: ' + excluded + ', result: ' + result);
 
 			return this.__kosian_cache[url] = result;
 		},
