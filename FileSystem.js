@@ -49,7 +49,11 @@
 		function initFileSystemCore (data) {
 			var FileSystemImpl = require('kosian/FileSystemImpl').FileSystemImpl;
 
-			data = this.ext.utils.parseJson(data);
+			data = this.ext.utils.parseJson(data, false);
+			if (data === false) {
+				this.ext.log('!ERROR: cannot restore consumer keys.');
+				data = {};
+			}
 
 			for (var i in this.fstab) {
 				if (!data[i]) continue;
@@ -66,23 +70,49 @@
 			};
 		}
 
-		this.ext.resource('consumer_keys.bin', function (binkeys) {
-			if (binkeys === false) {
-				this.ext.resource('consumer_keys.json', initFileSystemCore, {noCache:true, bind:this});
-				return;
-			}
+		function handleConsumerKeysLoad (consumerKeys) {
+			this.ext.resource(this.ext.cryptKeyPath, function (cryptKey) {
+				if (consumerKeys === false) {
+					this.ext.log('!ERROR: cannot load consumer keys.');
+					return;
+				}
+				if (cryptKey === false) {
+					this.ext.log('!ERROR: cannot load crypt key.');
+					return;
+				}
 
-			this.ext.resource(this.ext.cryptKeyPath, function (data) {
 				var Blowfish = require('kosian/Blowfish').Blowfish;
 				var SHA1 = require('kosian/SHA1').SHA1;
 
-				var data_sha1 = SHA1.calc(data);
-				var bf = new Blowfish(data_sha1);
-				var decrypted = bf.decrypt64(binkeys);
+				var cryptKeyHash = SHA1.calc(cryptKey);
+				var bf = new Blowfish(cryptKeyHash.substring(0, 16));
 
-				initFileSystemCore.call(this, decrypted);
+				if (consumerKeys.charAt(0) == '{') {
+					/*
+					this.ext.isDev && this.ext.log(
+						'!INFO: crypted code:>>>>' +
+						bf.encrypt64(consumerKeys) +
+						'<<<<');
+					 */
+				}
+				else{
+					consumerKeys = bf.decrypt64(consumerKeys);
+				}
 
+				initFileSystemCore.call(this, consumerKeys);
 			}, {noCache:true, bind:this});
+		}
+
+		this.ext.resource('consumer_keys.bin', function (binkeys) {
+			if (binkeys !== false) {
+				handleConsumerKeysLoad.call(this, binkeys);
+			}
+			else {
+				this.ext.resource(
+					'consumer_keys.json',
+					handleConsumerKeysLoad,
+					{noCache:true, bind:this});
+			}
 		}, {
 			noCache:true,
 			mimeType:'text/plain;charset=x-user-defined',

@@ -54,7 +54,7 @@
 
 	function parseJson (s, def) {
 		if (typeof s != 'string') {
-			return def || {};
+			return arguments.length >= 2 ? def : {};
 		}
 
 		var result;
@@ -62,7 +62,7 @@
 			result = JSON.parse(s);
 		}
 		catch (e) {
-			result = def || {};
+			result = arguments.length >= 2 ? def : {};
 		}
 
 		return result;
