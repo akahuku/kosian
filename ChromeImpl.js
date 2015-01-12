@@ -30,8 +30,45 @@
 
 	function openTabWithUrl (url, selfUrl, callback) {
 		var that = this;
-		chrome.tabs.create({url:url}, function (tab) {
-			that.emit(callback, tab.id, url);
+		var selfHost = this.getBaseUrl(selfUrl);
+		chrome.tabs.query({}, function (tabs) {
+			var state = 0;
+			var existsTabId = -1;
+			var rightTabIndex = -1;
+			tabs.some(function (tab, i) {
+				if (tab.url == url) {
+					existsTabId = tab.id;
+					return true;
+				}
+				else if (typeof tab.url == 'string') {
+					switch (state) {
+					case 0:
+						if (tab.url == selfUrl) {
+							state = 1;
+						}
+						break;
+					case 1:
+						if (tab.url.indexOf(selfHost) != 0) {
+							rightTabIndex = tab.index;
+							return true;
+						}
+						break;
+					}
+				}
+			});
+			if (existsTabId >= 0) {
+				chrome.tabs.update(existsTabId, {active:true});
+				that.emit(callback, existsTabId, url);
+			}
+			else {
+				var p = {url:url};
+				if (rightTabIndex >= 0) {
+					p.index = rightTabIndex;
+				}
+				chrome.tabs.create(p, function (tab) {
+					that.emit(callback, tab.id, url);
+				});
+			}
 		});
 	}
 
