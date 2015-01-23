@@ -60,13 +60,47 @@
 
 	function openTabWithUrl (url, selfUrl, callback) {
 		var that = this;
-		tabs.open({
-			url: url,
-			onReady: function (tab) {
-				callback && that.emit(callback, tab.id, tab.url);
-				callback = null;
+		var selfHost = this.getBaseUrl(selfUrl);
+		var state = 0;
+		var existsTab = null;
+		var rightTabIndex = -1;
+		Array.prototype.some.call(tabs, function (tab) {
+			if (tab.url == url) {
+				existsTab = tab;
+				return true;
+			}
+			else if (typeof tab.url == 'string') {
+				switch (state) {
+				case 0:
+					if (tab.url == selfUrl) {
+						state = 1;
+					}
+					break;
+				case 1:
+					if (tab.url.indexOf(selfHost) != 0) {
+						rightTabIndex = tab.index;
+						return true;
+					}
+					break;
+				}
 			}
 		});
+		if (existsTab) {
+			existsTab.activate();
+			this.emit(callback, existsTab.id, url);
+		}
+		else {
+			tabs.open({
+				url: url,
+				onOpen: function (tab) {
+					if (rightTabIndex >= 0) {
+						tab.index = rightTabIndex;
+					}
+					that.emit(callback, tab.id, tab.url);
+					callback = null;
+				}
+			});
+		}
 	}
 
 	function openTabWithFile (file, callback) {

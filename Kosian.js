@@ -108,8 +108,13 @@
 
 		setOpenBaseUrlPattern: {value: function (pattern) {
 			var result = this.openBaseURLPattern;
-			if (!(pattern instanceof RegExp)) return;
-			this.openBaseURLPattern = pattern;
+			/*
+			 * In a very strange thing,
+			 * Firefox 36+ assumes that pattern is NOT RegExp instance.
+			 */
+			//if (!(pattern instanceof RegExp)) return;
+			if (!pattern || typeof pattern.source != 'string') return;
+			this.openBaseURLPattern = new RegExp(pattern.source);
 			return result;
 		}},
 
