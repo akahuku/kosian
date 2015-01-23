@@ -129,12 +129,18 @@
 		else {
 			if (window.location) {
 				locationGetter = function (resourcePath) {
-					return window.location.protocol + '//' + window.location.host + '/' + resourcePath;
+					return window.location.protocol +
+						'//' +
+						window.location.host +
+						('/' + resourcePath).replace(/\/+/g, '/');
 				};
 			}
 			else if (self_) {
 				locationGetter = function (resourcePath) {
-					return self_.data.url(resourcePath);
+					return self_.data.url(
+						resourcePath
+							.replace(/\/+/g, '/')
+							.replace(/^\//, ''));
 				};
 			}
 		}

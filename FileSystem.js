@@ -71,11 +71,11 @@
 		}
 
 		function handleConsumerKeysLoad (consumerKeys) {
+			if (consumerKeys === false) {
+				this.ext.log('!ERROR: cannot load consumer keys.');
+				return;
+			}
 			this.ext.resource(this.ext.cryptKeyPath, function (cryptKey) {
-				if (consumerKeys === false) {
-					this.ext.log('!ERROR: cannot load consumer keys.');
-					return;
-				}
 				if (cryptKey === false) {
 					this.ext.log('!ERROR: cannot load crypt key.');
 					return;
