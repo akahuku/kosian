@@ -66,7 +66,7 @@
 			this.fstab.nullFs = {
 				enabled:true,
 				isNull:true,
-				instance:FileSystemImpl()
+				instance:FileSystemImpl(null, this.ext)
 			};
 		}
 
@@ -193,7 +193,7 @@
 	}
 
 	FileSystem.prototype.clearCredentials = function (target) {
-		Object.keys(fstab).forEach(function (name) {
+		Object.keys(this.fstab).forEach(function (name) {
 			var fs = this.fstab[name];
 			if (!fs || !fs.instance || typeof fs.instance.clearCredentials != 'function') return;
 			if (typeof target == 'string') {

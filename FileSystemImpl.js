@@ -203,6 +203,7 @@
 
 	function FileSystem (extension, options) {
 		this.extension = extension;
+		options || (options = {});
 
 		var self = this;
 		var accessToken = '';
@@ -1791,7 +1792,7 @@
 		case 'onedrive':
 			return new FileSystemOneDrive(ext, options);
 		default:
-			return new FileSystem;
+			return new FileSystem(ext, options);
 		}
 	}
 
