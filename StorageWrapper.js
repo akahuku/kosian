@@ -70,7 +70,11 @@
 				localStorage.removeItem(key);
 			}
 			else {
-				localStorage.setItem(key, StorageWrapper.prototype.toInternal(value));
+				value = StorageWrapper.prototype.toInternal(value);
+				var current = localStorage.getItem(key);
+				if (current === null || value != current) {
+					localStorage.setItem(key, value);
+				}
 			}
 		}},
 		clear: {value: function () {
@@ -97,7 +101,11 @@
 				delete this.ss.storage[key];
 			}
 			else {
-				this.ss.storage[key] = StorageWrapper.prototype.toInternal(value);
+				value = StorageWrapper.prototype.toInternal(value);
+				var current = this.ss.storage[key];
+				if (current === undefined || value != current) {
+					this.ss.storage[key] = value;
+				}
 			}
 		}},
 		clear: {value: function () {
