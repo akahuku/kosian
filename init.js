@@ -89,20 +89,22 @@
 				loader(onload);
 			}
 			else {
-				/*var a = ['*** all scripts has been loaded ***'];
+				/*
+				var a = ['*** all scripts has been loaded ***'];
 				for (var i in modules) {
 					a.push('module path: ' + i);
 					for (var j in modules[i]) {
 						a.push('\t' + j);
 					}
 				}
-				console.log(a.join('\n'));*/
+				console.log(a.join('\n'));
+				 */
 			}
 		});
 	}
 
 	function getBasePath () {
-		var pattern = /((?:chrome-extension|widget):.*)(?::\d+)+/;
+		var pattern = /((?:chrome-extension|widget):.*\.js)/;
 		var stack = (new Error).stack.split('\n');
 		var self, target;
 		while (stack.length) {
@@ -133,6 +135,16 @@
 
 		var canonical = anchor.href;
 		pathCache[path] = canonical;
+
+		if (!modules[canonical] && /^\./.test(path)) {
+			console.error([
+				'*** error in require ***',
+				' argument path: "' + path + '"',
+				'     base path: "' + base + '"',
+				'canonical path: "' + canonical + '"',
+				'    stackframe: ' + (new Error).stack
+			].join('\n'));
+		}
 
 		return modules[canonical];
 	}
