@@ -34,7 +34,7 @@
 	var tabs = require('sdk/tabs');
 	var l10n = require('sdk/l10n/locale');
 	var MatchPattern = require('sdk/util/match-pattern').MatchPattern;
-	var base = require('kosian/Kosian').Kosian;
+	var base = require('./Kosian').Kosian;
 
 	function findTabById (id) {
 		var result;

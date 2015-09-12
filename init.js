@@ -101,13 +101,35 @@
 		});
 	}
 
+	function getBasePath () {
+		var pattern = /((?:chrome-extension|widget):.*)(?::\d+)+/;
+		var stack = (new Error).stack.split('\n');
+		var self, target;
+		while (stack.length) {
+			target = pattern.exec(stack[0]);
+			if (target) {
+				target = target[1];
+				if (self) {
+					if (target != self) break;
+				}
+				else {
+					self = target;
+				}
+			}
+			stack.shift();
+			target = null;
+		}
+		return target ? target.replace(/[^\/]+$/, '') : '';
+	}
+
 	function require (path) {
 		if (path in pathCache) {
 			return modules[pathCache[path]];
 		}
 
+		var base = getBasePath();
 		var anchor = document.createElement('a');
-		anchor.href = 'lib/' + path + '.js';
+		anchor.href = base + path + '.js';
 
 		var canonical = anchor.href;
 		pathCache[path] = canonical;
