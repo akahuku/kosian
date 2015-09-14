@@ -281,7 +281,7 @@
 			}, NOTIFY_TIMER_INTERVAL);
 
 			if (!collectTimer) {
-				collectTimer = setInterval(collectPorts, COLLECT_TIMER_INTERVAL);
+				collectTimer = setInterval(function () {collectPorts()}, COLLECT_TIMER_INTERVAL);
 			}
 		}
 
