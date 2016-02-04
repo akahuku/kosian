@@ -1786,6 +1786,353 @@
 	FileSystemOneDrive.prototype.constructor = FileSystemOneDrive;
 
 	/*
+	 * file system class for local file system
+	 * this class depends on Chrome apps named "Local File Operator for wasavi"
+	 */
+
+	function FileSystemLocalFileChrome (extension, options) {
+
+		/*
+		 * tasks
+		 */
+
+		function ls (task) {
+			chrome.runtime.sendMessage(
+				LFO_ID,
+				{
+					command: 'ls',
+					path: task.path
+				},
+				function (response) {
+					if (chrome.runtime.lastError) {
+						return self.responseError(
+							task, chrome.runtime.lastError.message);
+					}
+					else if (!response) {
+						return self.responseError(
+							task, _('Invalid response.'));
+					}
+					else if (response.error) {
+						return self.responseError(
+							task, response.error);
+					}
+
+					var data = {
+						name: response.name,
+						size: '',
+						bytes: 0,
+						path: response.path,
+						is_dir: true,
+						is_deleted: false,
+						id: null,
+						modified: null,
+						created: null,
+						mime_type: 'application/x-kosian-directory',
+						contents: response.entries
+					};
+
+					self.response(task, {data: data});
+					extension.emit(task.options.onload, data);
+				}
+			);
+			taskQueue.run();
+		}
+
+		function read (task) {
+			self.response(task, {state:'reading', progress:0});
+
+			chrome.runtime.sendMessage(
+				LFO_ID,
+				{
+					command: 'read',
+					path: task.path
+				},
+				function (response) {
+					try {
+						if (chrome.runtime.lastError) {
+							return self.responseError(
+								task, chrome.runtime.lastError.message);
+						}
+						else if (!response) {
+							return self.responseError(
+								task, _('Invalid response.'));
+						}
+						else if (response.error) {
+							return self.responseError(
+								task, response.error);
+						}
+
+						self.response(task, {
+							state: 'complete',
+							status: 200,
+							content: response.content,
+							meta: {
+								name: response.name,
+								size: u.readableSize(response.size),
+								bytes: response.size,
+								path: response.path,
+								is_dir: false,
+								is_deleted: false,
+								id: null,
+								modified: new Date(response.lastModified),
+								created: null,
+								mime_type: 'application/octet-stream',
+							}
+						});
+					}
+					finally {
+						taskQueue.run();
+					}
+				}
+			);
+		}
+
+		function write (task) {
+			self.response(task, {state:'writing', progress:0});
+
+			chrome.runtime.sendMessage(
+				LFO_ID,
+				{
+					command: 'write',
+					path: task.path,
+					content: task.content
+				},
+				function (response) {
+					try {
+						if (chrome.runtime.lastError) {
+							return self.responseError(
+								task, chrome.runtime.lastError.message);
+						}
+						else if (!response) {
+							return self.responseError(
+								task, _('Invalid response.'));
+						}
+						else if (response.error) {
+							return self.responseError(
+								task, response.error);
+						}
+
+						self.response(task, {
+							state: 'complete',
+							status: 200,
+							meta: {
+								name: response.name,
+								size: u.readableSize(response.size),
+								bytes: response.size,
+								path: response.path,
+								is_dir: false,
+								is_deleted: false,
+								id: null,
+								modified: null,
+								created: null,
+								mime_type: 'application/octet-stream'
+							}
+						});
+					}
+					finally {
+						taskQueue.run();
+					}
+				}
+			);
+		}
+
+		/*
+		 * init
+		 */
+
+		FileSystem.apply(this, arguments);
+		this.backend = 'file';
+		this.needAuthentication = false;
+		var self = this;
+		var taskQueue = this.taskQueue = new TaskQueue(this, null, ls, read, write);
+		//var LFO_ID = 'igbjeepbgpdcjmpcjgkkfgelekeigbhc';	// develop version
+		var LFO_ID = 'dkbdmkncpnepdbaneikhbbeiboehjnol';	// release version
+	}
+
+	FileSystemLocalFileChrome.prototype = Object.create(FileSystem.prototype);
+	FileSystemLocalFileChrome.prototype.constructor = FileSystemLocalFileChrome;
+
+	/*
+	 * file system class for local file system
+	 * this class is dedicated to Firefox.
+	 */
+
+	function FileSystemLocalFileFirefox (extension, options) {
+
+		function initClasses () {
+			var osfile = require('chrome').Cu.import(
+				'resource://gre/modules/osfile.jsm', {});
+			TextDecoder = osfile.TextDecoder;
+			TextEncoder = osfile.TextEncoder;
+			OS = osfile.OS;
+		}
+
+		/*
+		 * tasks
+		 */
+
+		function ls (task) {
+			var entries = [];
+			var iter = new OS.File.DirectoryIterator(task.path);
+
+			iter.forEach(function (entry) {
+				entries.push({
+					name: OS.Path.basename(entry.name),
+					size: '',
+					bytes: 0,
+					path: entry.path.replace(/\/{2,}/g, '/'),
+					is_dir: entry.isDir,
+					is_deleted: false,
+					id: null,
+					modified: null,
+					created: null,
+					mime_type: entry.isDir ?
+						'application/x-kosian-directory' :
+						'application/octet-stream'
+				});
+			})
+			.then(
+				function () {
+					var data = {
+						name: OS.Path.basename(task.path),
+						size: '',
+						bytes: 0,
+						path: task.path,
+						is_dir: true,
+						is_deleted: false,
+						id: null,
+						modified: null,
+						created: null,
+						mime_type: 'application/x-kosian-directory',
+						contents: entries
+					};
+
+					self.response(task, {data: data});
+					extension.emit(task.options.onload, data);
+				},
+				function (reason) {
+					self.responseError(task, reason);
+				}
+			)
+			.then(function () {
+				iter.close();
+			});
+			taskQueue.run();
+		}
+
+		function read (task) {
+			self.response(task, {state:'reading', progress:0});
+
+			OS.File.read(task.path).then(
+				function (data) {
+					return OS.File.stat(task.path).then(function (stat) {
+						var content = data;
+
+						if ('encoding' in task.options) {
+							var decoder;
+							try {
+								decoder = new TextDecoder(task.options.encoding);
+							}
+							catch (ex) {
+								return self.responseError(
+									task, 'Cannot create decoder: ' + task.options.encoding);
+							}
+							content = decoder.decode(content);
+						}
+
+						self.response(task, {
+							state: 'complete',
+							status: 200,
+							content: content,
+							meta: {
+								name: OS.Path.basename(task.path),
+								size: u.readableSize(stat.size),
+								bytes: stat.size,
+								path: task.path,
+								is_dir: false,
+								is_deleted: false,
+								id: null,
+								modified: stat.lastModificationDate,
+								created: stat.creationDate,
+								mime_type: 'application/octet-stream'
+							}
+						});
+					});
+				},
+				function (err) {
+					self.responseError(task, _('Failed to read'));
+				}
+			).then(function () {
+				taskQueue.run();
+			});
+		}
+
+		function write (task) {
+			self.response(task, {state:'writing', progress:0});
+
+			var content = task.content;
+
+			if (typeof content == 'string') {
+				var encoder;
+				try {
+					encoder = new TextEncoder(task.options.encoding || 'UTF-8');
+				}
+				catch (ex) {
+					self.responseError(
+						task, 'Cannot create encoder: ' + task.options.encoding);
+					taskQueue.run();
+					return;
+				}
+				content = encoder.encode(content);
+			}
+
+			OS.File.writeAtomic(task.path, content, {tmpPath: task.path + '.tmp'}).then(
+				function () {
+					return OS.File.stat(task.path).then(function (stat) {
+						self.response(task, {
+							state: 'complete',
+							status: 200,
+							meta: {
+								name: OS.Path.basename(task.path),
+								size: u.readableSize(stat.size),
+								bytes: stat.size,
+								path: task.path,
+								is_dir: false,
+								is_deleted: false,
+								id: null,
+								modified: stat.lastModificationDate,
+								created: stat.creationDate,
+								mime_type: 'application/octet-stream'
+							}
+						});
+					});
+				},
+				function (err) {
+					self.responseError(task, _('Failed to write'));
+				}
+			).then(function () {
+				taskQueue.run();
+			});
+		}
+
+		/*
+		 * init
+		 */
+
+		FileSystem.apply(this, arguments);
+		this.backend = 'file';
+		this.needAuthentication = false;
+		var self = this;
+		var taskQueue = this.taskQueue = new TaskQueue(this, null, ls, read, write);
+		var TextDecoder, TextEncoder, OS;
+
+		initClasses();
+	}
+
+	FileSystemLocalFileFirefox.prototype = Object.create(FileSystem.prototype);
+	FileSystemLocalFileFirefox.prototype.constructor = FileSystemLocalFileFirefox;
+
+	/*
 	 * export
 	 */
 
@@ -1797,6 +2144,14 @@
 			return new FileSystemGDrive(ext, options);
 		case 'onedrive':
 			return new FileSystemOneDrive(ext, options);
+		case 'file':
+			switch (ext.kind) {
+			case 'Chrome':
+				return new FileSystemLocalFileChrome(ext, options);
+			case 'Firefox':
+				return new FileSystemLocalFileFirefox(ext, options);
+			}
+			// FALLTHRU
 		default:
 			return new FileSystem(ext, options);
 		}
