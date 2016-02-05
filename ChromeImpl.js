@@ -86,13 +86,13 @@
 
 	function closeTab (id) {
 		chrome.tabs.get(id, function (tab) {
-			tab && chrome.tabs.remove(id);
+			!chrome.runtime.lastError && tab && chrome.tabs.remove(id);
 		});
 	}
 
 	function focusTab (id) {
 		chrome.tabs.get(id, function (tab) {
-			tab && chrome.tabs.update(id, {active:true});
+			!chrome.runtime.lastError && tab && chrome.tabs.update(id, {active:true});
 		});
 	}
 
@@ -121,7 +121,9 @@
 	function getTabTitle (id, callback) {
 		var that = this;
 		chrome.tabs.get(id, function (tab) {
-			that.emit(callback, tab ? tab.title : null);
+			that.emit(
+				callback,
+				!chrome.runtime.lastError && tab ? tab.title : null);
 		});
 	}
 

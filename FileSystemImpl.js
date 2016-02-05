@@ -273,6 +273,8 @@
 						_('Not a authentication task: {0}', task.task));
 				}
 
+				console.log('wasavi: authorize, state: ' + task.state);
+
 				switch (task.state) {
 				case 'error':
 					self.responseError(task, {
