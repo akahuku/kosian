@@ -278,7 +278,12 @@
 				ports[req.internalId].url = data.url;
 			}
 
-			return !!that.receiver(req, data, sender.tab.id, res);
+			var id;
+			if (sender && 'tab' in sender && 'id' in sender.tab) {
+				id = sender.tab.id;
+			}
+
+			return !!that.receiver(req, data, id, res);
 		}
 
 		base.apply(this, arguments);

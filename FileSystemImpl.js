@@ -120,7 +120,7 @@
 			var obj = fs.loadCredentials();
 
 			if (!obj) return;
-			if (keys.some(function (key) {return !(key in obj)})) return;
+			//if (keys.some(function (key) {return !(key in obj)})) return;
 
 			pushAuthorizeTask();
 			queue[0].state = 'pre-authorized';
@@ -273,8 +273,6 @@
 						_('Not a authentication task: {0}', task.task));
 				}
 
-				console.log('wasavi: authorize, state: ' + task.state);
-
 				switch (task.state) {
 				case 'error':
 					self.responseError(task, {
@@ -393,9 +391,18 @@
 
 							task.state = 'pre-authorized';
 							task.accessToken = data.access_token;
-							'refresh_token' in data && (task.refreshToken = data.refresh_token);
 							task.tokenType = data.token_type;
-							'uid' in data && (task.uid = data.uid);
+
+							// store refresh token if exists
+							if ('refresh_token' in data) {
+								task.refreshToken = data.refresh_token;
+							}
+
+							// store user id if exists
+							if (authOpts.validateUserIdKey in data) {
+								task.uid = data[authOpts.validateUserIdKey];
+							}
+
 							self.taskQueue.run();
 						},
 						function () {
@@ -426,17 +433,22 @@
 									task,
 									_('Invalid status code #{0}', status));
 							}
-							if ('uid' in data && 'uid' in task && data.uid != task.uid) {
-								return handleAuthError(
-									task,
-									_('User unmatch.'));
+
+							// validate user ID
+							if ('uid' in task) {
+								if (!(authOpts.validateUserIdKey in data)
+								|| data[authOpts.validateUserIdKey] != task.uid) {
+									return handleAuthError(
+										task,
+										_('User unmatch.'));
+								}
 							}
 
 							task.state = 'authorized';
 							accessToken = task.accessToken;
 							refreshToken = task.refreshToken;
 							tokenType = task.tokenType;
-							uid = data.id;
+							uid = data[authOpts.validateUserIdKey];
 							locale = data.locale;
 							self.saveCredentials({
 								token:accessToken,
@@ -817,7 +829,8 @@
 			startUrl:'https://www.dropbox.com/1/oauth2/authorize',
 			callbackUrl:options.callback,
 			exchangeUrl:'https://api.dropbox.com/1/oauth2/token',
-			validateUrl:'https://api.dropbox.com/1/account/info'
+			validateUrl:'https://api.dropbox.com/1/account/info',
+			validateUserIdKey:'uid'
 		});
 		var taskQueue = this.taskQueue = new TaskQueue(this, authorize, ls, read, writeBinder.write);
 		var handleError = this.handleError;
@@ -1346,6 +1359,7 @@
 			callbackUrl:options.callback,
 			exchangeUrl:'https://accounts.google.com/o/oauth2/token',
 			validateUrl:'https://www.googleapis.com/oauth2/v1/userinfo',
+			validateUserIdKey:'user_id',
 			scopes:[
 				'https://www.googleapis.com/auth/drive',
 				'https://www.googleapis.com/auth/userinfo.profile'
@@ -1763,6 +1777,7 @@
 			callbackUrl:options.callback,
 			exchangeUrl:'https://login.live.com/oauth20_token.srf',
 			validateUrl:API_BASE_URL + 'me',
+			validateUserIdKey:'id',
 			scopes:[
 				'wl.skydrive_update',
 				'wl.offline_access'
