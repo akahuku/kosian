@@ -1359,7 +1359,7 @@
 			callbackUrl:options.callback,
 			exchangeUrl:'https://accounts.google.com/o/oauth2/token',
 			validateUrl:'https://www.googleapis.com/oauth2/v1/userinfo',
-			validateUserIdKey:'user_id',
+			validateUserIdKey:'id',
 			scopes:[
 				'https://www.googleapis.com/auth/drive',
 				'https://www.googleapis.com/auth/userinfo.profile'
@@ -1399,6 +1399,10 @@
 			camera_roll:      'me/skydrive/camera_roll',
 			public_documents: 'me/skydrive/public_documents'
 		};
+
+		function isFolder (type) {
+			return type == 'folder' || type == 'album';
+		}
 
 		function getRoot (fragments) {
 			return fragments[0] in specialRootMap ?
@@ -1448,7 +1452,7 @@
 								// valid path
 								success(fragments, result, status);
 							}
-							else if (f.type != 'folder') {
+							else if (!isFolder(f.type)) {
 								failure(fragments, null, status);
 							}
 							else {
@@ -1506,7 +1510,7 @@
 				size:       u.readableSize(item.size || 0),
 				bytes:      item.size || 0,
 				path:       u.joinPath(path, item.name),
-				is_dir:     item.type == 'folder',
+				is_dir:     isFolder(item.type),
 				is_deleted: false,
 				id:         item.id,
 				modified:   u.dateFromW3CDTF(item.updated_time),
@@ -1524,7 +1528,7 @@
 				var result = getListItem(dirData, prefix);
 				result.path = u.joinPath(prefix);
 
-				if (dirData.type == 'folder') {
+				if (isFolder(dirData.type)) {
 					self.request(
 						API_BASE_URL + endPointFragment + '/files',
 						{ responseType:'json' },
@@ -1617,7 +1621,7 @@
 
 					// valid path and existent file
 					var meta = data[data.length - 1];
-					if (meta.type == 'folder') {
+					if (isFolder(meta.type)) {
 						self.responseError(task, _('Cannot read a directory content.'));
 						taskQueue.run();
 						return;
@@ -1701,7 +1705,7 @@
 
 					// valid path
 					else {
-						if (data[data.length - 1].type == 'folder') {
+						if (isFolder(data[data.length - 1].type)) {
 							self.responseError(task, _('Cannot overwrite a directory.'));
 							taskQueue.run();
 							return;
