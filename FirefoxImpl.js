@@ -388,7 +388,10 @@
 
 		Object.defineProperties(this, {
 			workers: {value: workers},
-			findTabById: {value: findTabById}
+			findTabById: {value: findTabById},
+			Cc: {value: Cc},
+			Ci: {value: Ci},
+			Cu: {value: Cu}
 		});
 
 		contentScriptOptions.extensionId = self.id;
