@@ -262,7 +262,7 @@
 				ports[port.name].url = data.url;
 			}
 
-			that.receiver(req, data, port.name, function () {});
+			that.receiver(req, data, port.sender.tab.id, function () {});
 		}
 
 		// single message handlers
