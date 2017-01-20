@@ -2225,13 +2225,7 @@
 		case 'onedrive':
 			return new FileSystemOneDrive(ext, options);
 		case 'file':
-			switch (ext.kind) {
-			case 'Chrome':
-				return new FileSystemLocalFileChrome(ext, options);
-			case 'Firefox':
-				return new FileSystemLocalFileFirefox(ext, options);
-			}
-			// FALLTHRU
+			return new FileSystemLocalFileChrome(ext, options);
 		default:
 			return new FileSystem(ext, options);
 		}
