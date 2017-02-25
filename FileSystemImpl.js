@@ -1910,6 +1910,7 @@
 			callbackUrl: options.callback,
 			exchangeUrl: 'https://login.live.com/oauth20_token.srf',
 			validateUrl: API_BASE_URL + 'me',
+			validateMethod: 'GET',
 			validateUserIdKey: 'id',
 			scopes: [
 				'wl.skydrive_update',
