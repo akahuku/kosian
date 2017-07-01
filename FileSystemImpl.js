@@ -869,6 +869,7 @@
 							);
 						}
 
+						meta.path = self.getExternalPath(meta.path);
 						self.response(task, {
 							state: 'complete',
 							status: status,
