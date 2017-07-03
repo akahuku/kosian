@@ -80,23 +80,31 @@
 		});
 	}
 
+	function getNativeTabIdFromComplexTabId (id) {
+		return (id + '').split('_')[0] - 0;
+	}
+
 	function isTabExist (id) {
+		id = getNativeTabIdFromComplexTabId(id);
 		return id in this.tabIds;
 	}
 
 	function closeTab (id) {
+		id = getNativeTabIdFromComplexTabId(id);
 		chrome.tabs.get(id, function (tab) {
 			!chrome.runtime.lastError && tab && chrome.tabs.remove(id);
 		});
 	}
 
 	function focusTab (id) {
+		id = getNativeTabIdFromComplexTabId(id);
 		chrome.tabs.get(id, function (tab) {
 			!chrome.runtime.lastError && tab && chrome.tabs.update(id, {active:true});
 		});
 	}
 
 	function nextTab (id) {
+		id = getNativeTabIdFromComplexTabId(id);
 		chrome.tabs.query({}, function (tabs) {
 			tabs.some(function (t, i) {
 				if (t.id == id) {
@@ -108,6 +116,7 @@
 	}
 
 	function prevTab (id) {
+		id = getNativeTabIdFromComplexTabId(id);
 		chrome.tabs.query({}, function (tabs) {
 			tabs.some(function (t, i) {
 				if (t.id == id) {
@@ -120,6 +129,7 @@
 
 	function getTabTitle (id, callback) {
 		var that = this;
+		id = getNativeTabIdFromComplexTabId(id);
 		chrome.tabs.get(id, function (tab) {
 			that.emit(
 				callback,
@@ -128,6 +138,7 @@
 	}
 
 	function broadcastToAllTabs (message, exceptId) {
+		exceptId = (exceptId + '').split('_')[0];
 		chrome.tabs.query({}, function (tabs) {
 			tabs.forEach(function (tab) {
 				if (exceptId !== undefined && tab.id == exceptId) return;
