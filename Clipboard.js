@@ -66,29 +66,9 @@
 	ExecCommandClipboard.prototype.constructor = Clipboard;
 
 	//
-	function JetpackClipboard () {
-		this.cb = require('sdk/clipboard');
-	}
-	JetpackClipboard.prototype = Object.create(Clipboard.prototype, {
-		set: {value: function (data) {
-			this.cb.set(data, 'text');
-		}},
-		get: {value: function () {
-			return this.cb.get('text');
-		}}
-	});
-	JetpackClipboard.prototype.constructor = Clipboard;
-
-	//
 	function create (window) {
 		if (window.chrome) {
 			return new ExecCommandClipboard;
-		}
-		else if (window.opera) {
-			return new ExecCommandClipboard;
-		}
-		else if (require('sdk/self')) {
-			return new JetpackClipboard;
 		}
 		else {
 			return new Clipboard;
