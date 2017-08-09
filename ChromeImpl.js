@@ -226,7 +226,7 @@
 
 	function broadcast (message, exceptId) {
 		for (var tabId in this.tabIds) {
-			doSendMessageToTab(tabId);
+			doSendMessageToTab(tabId, message);
 		}
 	}
 
